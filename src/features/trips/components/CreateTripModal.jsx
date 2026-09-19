@@ -8,12 +8,13 @@ import { Button } from '../../../components/ui/Button'
 import { SUPPORTED_CURRENCIES } from '../../../constants/currencies'
 import { useUIStore } from '../../../store/useUIStore'
 import { useTripStore } from '../../../store/useTripStore'
+import { validateTripInput } from '../models/tripModel'
 
 export function CreateTripModal() {
   const isOpen = useUIStore((s) => s.isCreateTripModalOpen)
   const closeModal = useUIStore((s) => s.closeCreateTripModal)
   const showToast = useUIStore((s) => s.showToast)
-  const addTrip = useTripStore((s) => s.addTrip)
+  const createTrip = useTripStore((s) => s.createTrip)
   const navigate = useNavigate()
 
   const [formData, setFormData] = useState({
@@ -22,23 +23,11 @@ export function CreateTripModal() {
     startDate: '',
     endDate: '',
     currency: 'INR',
+    description: '',
   })
 
   const [errors, setErrors] = useState({})
-
-  const validate = () => {
-    const errs = {}
-    if (!formData.name.trim()) {
-      errs.name = 'Every grand adventure needs a name!'
-    }
-    if (!formData.destination.trim()) {
-      errs.destination = 'Where are you heading?'
-    }
-    if (formData.startDate && formData.endDate && formData.endDate < formData.startDate) {
-      errs.endDate = 'End date cannot be before start date (unless you invented time travel)'
-    }
-    return errs
-  }
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -50,29 +39,39 @@ export function CreateTripModal() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    const validationErrors = validate()
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors)
+    if (isSubmitting) return
+
+    const validation = validateTripInput(formData)
+    if (!validation.isValid) {
+      setErrors(validation.errors)
       return
     }
 
-    // Save trip foundation
-    const newTripId = addTrip(formData)
-    showToast(`Created "${formData.name}"! Time to split some expenses.`, 'success')
+    setIsSubmitting(true)
+    try {
+      const newTrip = createTrip(formData)
+      showToast(`Created "${newTrip.name}"! Time to split some expenses.`, 'success')
 
-    // Reset form & close
-    setFormData({
-      name: '',
-      destination: '',
-      startDate: '',
-      endDate: '',
-      currency: 'INR',
-    })
-    setErrors({})
-    closeModal()
-
-    // Navigate to new trip overview
-    navigate(`/trips/${newTripId}`)
+      setFormData({
+        name: '',
+        destination: '',
+        startDate: '',
+        endDate: '',
+        currency: 'INR',
+        description: '',
+      })
+      setErrors({})
+      closeModal()
+      navigate(`/trips/${newTrip.id}`)
+    } catch (err) {
+      if (err.validationErrors) {
+        setErrors(err.validationErrors)
+      } else {
+        showToast('Failed to create trip. Please check your inputs.', 'error')
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -87,7 +86,7 @@ export function CreateTripModal() {
         <div className="flex items-center gap-2.5 p-3 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-900 font-medium">
           <Sparkle className="w-5 h-5 text-amber-600 shrink-0" weight="fill" />
           <span>
-            Tip: You can add friends and log expenses right after creating the trip!
+            Tip: You can invite friends and track expenses as soon as your trip is created!
           </span>
         </div>
 
@@ -122,6 +121,7 @@ export function CreateTripModal() {
             value={formData.startDate}
             onChange={handleChange}
             error={errors.startDate}
+            required
           />
           <Input
             label="End Date"
@@ -130,6 +130,7 @@ export function CreateTripModal() {
             value={formData.endDate}
             onChange={handleChange}
             error={errors.endDate}
+            required
           />
         </div>
 
@@ -139,7 +140,8 @@ export function CreateTripModal() {
           name="currency"
           value={formData.currency}
           onChange={handleChange}
-          hint="Currency for all primary calculations on this trip."
+          error={errors.currency}
+          hint="Default currency for expenses and settlements on this trip."
         >
           {SUPPORTED_CURRENCIES.map((c) => (
             <option key={c.code} value={c.code}>
@@ -148,13 +150,38 @@ export function CreateTripModal() {
           ))}
         </Select>
 
+        {/* Description */}
+        <div className="w-full flex flex-col gap-1.5">
+          <label
+            htmlFor="trip-description"
+            className="text-xs font-bold tracking-wide text-zinc-800 uppercase"
+          >
+            Description (Optional)
+          </label>
+          <textarea
+            id="trip-description"
+            name="description"
+            rows={2}
+            placeholder="Add notes, house rules, or a packing reminder..."
+            value={formData.description}
+            onChange={handleChange}
+            className="w-full px-3.5 py-2 text-sm font-medium bg-white text-zinc-900 border-2 border-zinc-900 rounded-2xl shadow-playful-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-zinc-900 transition-all resize-none"
+          />
+        </div>
+
         {/* Modal actions */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-200">
-          <Button type="button" variant="ghost" onClick={closeModal}>
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 sm:gap-3 pt-4 border-t border-zinc-200">
+          <Button type="button" variant="ghost" onClick={closeModal} disabled={isSubmitting} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button type="submit" variant="primary" icon={AirplaneTakeoff}>
-            Create Trip
+          <Button
+            type="submit"
+            variant="primary"
+            icon={AirplaneTakeoff}
+            disabled={isSubmitting}
+            className="w-full sm:w-auto"
+          >
+            {isSubmitting ? 'Creating...' : 'Create Trip'}
           </Button>
         </div>
       </form>

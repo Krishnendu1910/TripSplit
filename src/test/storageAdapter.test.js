@@ -27,3 +27,4 @@ describe('StorageAdapter persistence abstraction', () => {
     expect(storageAdapter.get('temp')).toBeNull()
   })
 })
+

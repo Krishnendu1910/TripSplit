@@ -93,3 +93,4 @@ class StorageAdapter {
 }
 
 export const storageAdapter = new StorageAdapter()
+

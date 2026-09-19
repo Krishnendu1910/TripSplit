@@ -4,22 +4,69 @@ import { cn } from '../../lib/utils'
 
 export function Modal({ isOpen, onClose, title, description, children, className }) {
   const modalRef = useRef(null)
+  const previousActiveElement = useRef(null)
 
   useEffect(() => {
+    if (!isOpen) return
+
+    previousActiveElement.current = document.activeElement
+    document.body.style.overflow = 'hidden'
+
+    // Focus the first focusable element inside the modal, or the modal container itself
+    const focusTimer = setTimeout(() => {
+      if (modalRef.current) {
+        const focusables = modalRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        )
+        if (focusables.length > 0) {
+          focusables[0].focus()
+        } else {
+          modalRef.current.focus()
+        }
+      }
+    }, 50)
+
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape') {
         onClose()
+        return
+      }
+
+      // Focus trapping inside modal
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusables = Array.from(
+          modalRef.current.querySelectorAll(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          ),
+        )
+
+        if (focusables.length === 0) {
+          e.preventDefault()
+          return
+        }
+
+        const firstElement = focusables[0]
+        const lastElement = focusables[focusables.length - 1]
+
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault()
+          lastElement.focus()
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault()
+          firstElement.focus()
+        }
       }
     }
 
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-      window.addEventListener('keydown', handleKeyDown)
-    }
+    window.addEventListener('keydown', handleKeyDown)
 
     return () => {
+      clearTimeout(focusTimer)
       document.body.style.overflow = 'unset'
       window.removeEventListener('keydown', handleKeyDown)
+      if (previousActiveElement.current && typeof previousActiveElement.current.focus === 'function') {
+        previousActiveElement.current.focus()
+      }
     }
   }, [isOpen, onClose])
 
@@ -31,15 +78,16 @@ export function Modal({ isOpen, onClose, title, description, children, className
       aria-modal="true"
       aria-labelledby={title ? 'modal-title' : undefined}
       aria-describedby={description ? 'modal-description' : undefined}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-200 motion-reduce:transition-none motion-reduce:animate-none"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
     >
       <div
         ref={modalRef}
+        tabIndex={-1}
         className={cn(
-          'relative w-full max-w-lg bg-white border-3 border-zinc-900 rounded-3xl shadow-playful-lg p-6 sm:p-7 max-h-[90vh] overflow-y-auto',
+          'relative w-full max-w-lg bg-white border-3 border-zinc-900 rounded-3xl shadow-playful-lg p-5 sm:p-7 max-h-[90dvh] overflow-y-auto outline-none',
           className,
         )}
       >
@@ -71,3 +119,4 @@ export function Modal({ isOpen, onClose, title, description, children, className
     </div>
   )
 }
+

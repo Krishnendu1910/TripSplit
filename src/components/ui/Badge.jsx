@@ -25,8 +25,9 @@ export const Badge = forwardRef(function Badge(
       )}
       {...props}
     >
-      {Icon && <Icon className="w-3.5 h-3.5" weight="bold" />}
+      {Icon && <Icon className="w-3.5 h-3.5 shrink-0" weight="bold" aria-hidden="true" />}
       <span>{children}</span>
     </span>
   )
 })
+

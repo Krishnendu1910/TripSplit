@@ -20,8 +20,8 @@ export function EmptyState({
       )}
     >
       <div className="relative mb-5">
-        <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white border-2 border-zinc-900 rounded-3xl shadow-playful flex items-center justify-center text-orange-500 animate-float">
-          {Icon ? <Icon className="w-10 h-10 sm:w-12 sm:h-12" weight="duotone" /> : <Sparkle className="w-10 h-10" weight="duotone" />}
+        <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white border-2 border-zinc-900 rounded-3xl shadow-playful flex items-center justify-center text-orange-500 animate-float motion-reduce:animate-none">
+          {Icon ? <Icon className="w-10 h-10 sm:w-12 sm:h-12" weight="duotone" aria-hidden="true" /> : <Sparkle className="w-10 h-10" weight="duotone" aria-hidden="true" />}
         </div>
         {badgeText && (
           <div className="absolute -bottom-2 -right-2 bg-amber-300 text-zinc-900 font-extrabold text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full border border-zinc-900 shadow-playful-sm rotate-6">
@@ -30,10 +30,10 @@ export function EmptyState({
         )}
       </div>
 
-      <h3 className="text-xl sm:text-2xl font-black text-zinc-900 tracking-tight mb-2">
+      <h3 className="text-xl sm:text-2xl font-black text-zinc-900 tracking-tight mb-2 break-words">
         {title}
       </h3>
-      <p className="text-sm sm:text-base text-zinc-600 max-w-md mb-6 leading-relaxed">
+      <p className="text-sm sm:text-base text-zinc-600 max-w-md mb-6 leading-relaxed break-words">
         {description}
       </p>
 
@@ -48,3 +48,4 @@ export function EmptyState({
     </div>
   )
 }
+

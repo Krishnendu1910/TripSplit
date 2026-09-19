@@ -1,4 +1,5 @@
 import { forwardRef } from 'react'
+import { Link } from 'react-router-dom'
 import { cn } from '../../lib/utils'
 
 const variants = {
@@ -12,6 +13,8 @@ const variants = {
     'bg-transparent text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 border-2 border-transparent active:bg-zinc-200 focus-visible:ring-2 focus-visible:ring-zinc-400',
   subtle:
     'bg-amber-100 text-amber-950 hover:bg-amber-200 border-2 border-amber-900/40 shadow-playful-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none focus-visible:ring-2 focus-visible:ring-amber-400',
+  destructive:
+    'bg-red-600 text-white hover:bg-red-700 border-2 border-zinc-900 shadow-playful active:translate-x-0.5 active:translate-y-0.5 active:shadow-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2',
 }
 
 const sizes = {
@@ -31,27 +34,55 @@ export const Button = forwardRef(function Button(
     onClick,
     icon: Icon,
     iconPosition = 'left',
+    to,
     ...props
   },
   ref,
 ) {
+  const content = (
+    <>
+      {Icon && iconPosition === 'left' && (
+        <Icon className="w-4 h-4 shrink-0" weight="bold" aria-hidden="true" />
+      )}
+      <span>{children}</span>
+      {Icon && iconPosition === 'right' && (
+        <Icon className="w-4 h-4 shrink-0" weight="bold" aria-hidden="true" />
+      )}
+    </>
+  )
+
+  const combinedClassName = cn(
+    'inline-flex items-center justify-center font-medium transition-all duration-150 select-none cursor-pointer outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 motion-reduce:transition-none motion-reduce:transform-none',
+    variants[variant],
+    sizes[size],
+    className,
+  )
+
+  if (to) {
+    return (
+      <Link
+        ref={ref}
+        to={to}
+        onClick={onClick}
+        className={combinedClassName}
+        {...props}
+      >
+        {content}
+      </Link>
+    )
+  }
+
   return (
     <button
       ref={ref}
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className={cn(
-        'inline-flex items-center justify-center font-medium transition-all duration-150 select-none cursor-pointer outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0',
-        variants[variant],
-        sizes[size],
-        className,
-      )}
+      className={combinedClassName}
       {...props}
     >
-      {Icon && iconPosition === 'left' && <Icon className="w-4 h-4 shrink-0" weight="bold" />}
-      <span>{children}</span>
-      {Icon && iconPosition === 'right' && <Icon className="w-4 h-4 shrink-0" weight="bold" />}
+      {content}
     </button>
   )
 })
+

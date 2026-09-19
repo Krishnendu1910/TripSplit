@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Compass } from '@phosphor-icons/react'
 import { TripNavigationTabs } from '../components/layout/TripNavigationTabs'
 import { TripOverview } from '../features/trips/components/TripOverview'
@@ -7,34 +7,40 @@ import { ExpensesList } from '../features/expenses/components/ExpensesList'
 import { PeopleList } from '../features/participants/components/PeopleList'
 import { SettlementSummary } from '../features/settlements/components/SettlementSummary'
 import { EmptyState } from '../components/ui/EmptyState'
-import { useTripStore, DEMO_GOA_TRIP } from '../store/useTripStore'
+import { useTripStore } from '../store/useTripStore'
 
 export function TripDetailPage({ subview = 'overview' }) {
   const { tripId } = useParams()
+  const navigate = useNavigate()
   const trips = useTripStore((s) => s.trips)
   const setActiveTripId = useTripStore((s) => s.setActiveTripId)
 
-  const trip = trips.find((t) => t.id === tripId) || (tripId === 'goa-trip' ? DEMO_GOA_TRIP : null)
+  const trip = trips.find((t) => t.id === tripId) || null
 
   useEffect(() => {
-    if (tripId) {
+    if (tripId && trip) {
       setActiveTripId(tripId)
+    } else if (tripId && !trip) {
+      setActiveTripId(null)
     }
-  }, [tripId, setActiveTripId])
+  }, [tripId, trip, setActiveTripId])
 
   if (!trip) {
     return (
       <div className="space-y-6">
-        <Link to="/trips" className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-zinc-950">
+        <Link
+          to="/trips"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-600 hover:text-zinc-950"
+        >
           <ArrowLeft className="w-4 h-4" weight="bold" />
           <span>Back to All Trips</span>
         </Link>
         <EmptyState
           icon={Compass}
           title="Trip not found"
-          description={`We searched high and low, but couldn't locate trip #${tripId}. It might have been deleted or the link is incorrect.`}
+          description={`We searched high and low, but couldn't locate trip #${tripId}. It may have been deleted or the link is incorrect.`}
           actionLabel="Return to trips"
-          onAction={() => window.location.assign('/trips')}
+          onAction={() => navigate('/trips')}
           badgeText="Lost in transit"
         />
       </div>

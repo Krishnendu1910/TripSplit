@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { House, Compass, Gear, AirplaneTilt } from '@phosphor-icons/react'
+import { House, Compass, AirplaneTilt } from '@phosphor-icons/react'
 import { cn } from '../../lib/utils'
 import { useTripStore } from '../../store/useTripStore'
 
@@ -11,7 +11,6 @@ export function Navbar({ isMobile = false, onItemClick }) {
     { label: 'Home', path: '/', icon: House, exact: true },
     { label: 'All Trips', path: '/trips', icon: Compass, exact: true },
     { label: 'Current Trip', path: currentTripPath, icon: AirplaneTilt },
-    { label: 'Settings', path: '/settings', icon: Gear, badge: 'Soon' },
   ]
 
   if (isMobile) {
@@ -21,7 +20,7 @@ export function Navbar({ isMobile = false, onItemClick }) {
           const Icon = item.icon
           return (
             <NavLink
-              key={item.path}
+              key={item.label}
               to={item.path}
               end={item.exact}
               onClick={onItemClick}
@@ -58,7 +57,7 @@ export function Navbar({ isMobile = false, onItemClick }) {
         const Icon = item.icon
         return (
           <NavLink
-            key={item.path}
+            key={item.label}
             to={item.path}
             end={item.exact}
             className={({ isActive }) =>
@@ -90,3 +89,4 @@ export function Navbar({ isMobile = false, onItemClick }) {
     </nav>
   )
 }
+

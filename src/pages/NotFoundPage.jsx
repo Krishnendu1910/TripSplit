@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { Compass, House, AirplaneTilt } from '@phosphor-icons/react'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -25,16 +24,12 @@ export function NotFoundPage() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link to="/" className="w-full sm:w-auto">
-            <Button variant="primary" size="md" icon={House} className="w-full">
-              Back to Safety
-            </Button>
-          </Link>
-          <Link to="/trips" className="w-full sm:w-auto">
-            <Button variant="outline" size="md" icon={Compass} className="w-full">
-              Explore Trips
-            </Button>
-          </Link>
+          <Button to="/" variant="primary" size="md" icon={House} className="w-full sm:w-auto">
+            Back to Safety
+          </Button>
+          <Button to="/trips" variant="outline" size="md" icon={Compass} className="w-full sm:w-auto">
+            Explore Trips
+          </Button>
         </div>
       </Card>
     </div>

@@ -1,31 +1,74 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
-  Users,
-  Receipt,
-  Wallet,
-  Calendar,
-  MapPin,
-  Plus,
-  ArrowUpRight,
+  Archive,
+  ArrowCounterClockwise,
   Sparkle,
 } from '@phosphor-icons/react'
-import { Card } from '../../../components/ui/Card'
 import { Badge } from '../../../components/ui/Badge'
 import { Button } from '../../../components/ui/Button'
-import { formatCurrency, formatDateRange } from '../../../utils/formatters'
+import { EditTripModal } from './EditTripModal'
+import { DeleteTripModal } from './DeleteTripModal'
+import { AddExpenseModal } from '../../expenses/components/AddExpenseModal'
+import { AddPersonModal } from '../../participants/components/AddPersonModal'
+import { TripHeader } from './TripHeader'
+import { TripStatsTiles } from './TripStatsTiles'
+import { TripFinancialSnapshot } from './TripFinancialSnapshot'
+import { TripRecentExpenses } from './TripRecentExpenses'
+import { TripSquadSnapshot } from './TripSquadSnapshot'
+import { TripQuickActions } from './TripQuickActions'
+import { useTripStore } from '../../../store/useTripStore'
+import { useParticipantStore } from '../../../store/useParticipantStore'
+import { useExpenseStore } from '../../../store/useExpenseStore'
+import { useTripFinancialSummary } from '../../finance'
+import { useUIStore } from '../../../store/useUIStore'
 
+/**
+ * Real Trip Command Center.
+ * Unifies trip metadata, live statistics, financial status, recent expenses,
+ * squad snapshot, and quick actions using actual persisted trip data.
+ *
+ * @param {{ trip: Object }} props
+ */
 export function TripOverview({ trip }) {
-  const isDemo = trip.isDemo
-  const stats = trip.stats || {
-    totalSpent: 0,
-    peopleCount: 1,
-    expensesCount: 0,
-    userBalance: 0,
+  const navigate = useNavigate()
+  const archiveTrip = useTripStore((s) => s.archiveTrip)
+  const unarchiveTrip = useTripStore((s) => s.unarchiveTrip)
+  const showToast = useUIStore((s) => s.showToast)
+
+  // Modals state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false)
+  const [isAddPersonOpen, setIsAddPersonOpen] = useState(false)
+
+  const isArchived = trip.status === 'archived'
+  const isDemo = Boolean(trip.isDemo)
+
+  // Reactive store subscriptions (no cross-trip leakage)
+  const allExpenses = useExpenseStore((s) => s.expenses)
+  const tripExpenses = allExpenses.filter((e) => e.tripId === trip.id)
+
+  const allParticipants = useParticipantStore((s) => s.participants)
+  const tripParticipants = allParticipants.filter((p) => p.tripId === trip.id)
+
+  // Real financial engine summary
+  const financialSummary = useTripFinancialSummary(trip.id)
+  const totalSpent = financialSummary?.totalSpent || 0
+
+  const handleToggleArchive = () => {
+    if (isArchived) {
+      unarchiveTrip(trip.id)
+      showToast(`Trip "${trip.name}" restored to active trips!`, 'success')
+    } else {
+      archiveTrip(trip.id)
+      showToast(`Trip "${trip.name}" was moved to archives.`, 'info')
+    }
   }
 
   return (
     <div className="space-y-6">
-      {/* Demo Banner */}
+      {/* Demo Mock Data Banner (only if explicitly a demo fixture) */}
       {isDemo && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-amber-100/90 border-2 border-zinc-900 rounded-3xl shadow-playful-sm">
           <div className="flex items-center gap-3">
@@ -37,7 +80,7 @@ export function TripOverview({ trip }) {
                 Demo UI Preview Mode
               </p>
               <p className="text-xs text-zinc-700">
-                All numbers shown below are placeholder values for UI review only. Calculation engines activate in Phase 2.
+                All numbers shown below are placeholder values for UI review only.
               </p>
             </div>
           </div>
@@ -47,227 +90,106 @@ export function TripOverview({ trip }) {
         </div>
       )}
 
-      {/* Hero Trip Title Card */}
-      <Card className="bg-gradient-to-br from-white via-orange-50/30 to-amber-50/40 p-6 sm:p-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <Badge variant="teal" icon={MapPin}>
-                {trip.destination}
-              </Badge>
-              <Badge variant="orange" icon={Calendar}>
-                {formatDateRange(trip.startDate, trip.endDate)}
-              </Badge>
-              <Badge variant="default">
-                Currency: {trip.currency}
-              </Badge>
+      {/* Archived Banner */}
+      {isArchived && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-zinc-200 border-2 border-zinc-900 rounded-3xl shadow-playful-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-zinc-300 rounded-2xl border border-zinc-900 flex items-center justify-center text-zinc-800 shrink-0">
+              <Archive className="w-5 h-5" weight="bold" />
             </div>
-
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-zinc-900 tracking-tight uppercase">
-              {trip.name}
-            </h1>
-            <p className="text-sm sm:text-base text-zinc-600 mt-1 font-medium">
-              Keep the fun going while TripSplit handles the spreadsheet arguments.
-            </p>
+            <div>
+              <p className="text-sm font-extrabold text-zinc-900">
+                This trip is currently archived.
+              </p>
+              <p className="text-xs text-zinc-600">
+                Its expenses and balances remain safely preserved, but it is hidden from your active trips list.
+              </p>
+            </div>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2.5 pt-2 md:pt-0">
-            <Link to={`/trips/${trip.id}/expenses`}>
-              <Button variant="primary" size="md" icon={Plus}>
-                Add Expense
-              </Button>
-            </Link>
-            <Link to={`/trips/${trip.id}/settlement`}>
-              <Button variant="outline" size="md">
-                View Settlement
-              </Button>
-            </Link>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={ArrowCounterClockwise}
+            onClick={handleToggleArchive}
+          >
+            Unarchive Trip
+          </Button>
         </div>
-      </Card>
+      )}
 
-      {/* Core 4 Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Total Spent */}
-        <Card className="bg-white p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-zinc-500">
-              Total spent
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center">
-              <Receipt className="w-4 h-4" weight="bold" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">
-              {formatCurrency(stats.totalSpent, trip.currency)}
-            </div>
-            <span className="text-[11px] font-semibold text-zinc-400 mt-0.5 block">
-              Across all group members
-            </span>
-          </div>
-        </Card>
+      {/* 1. Trip Hero Header with Actions */}
+      <TripHeader
+        trip={trip}
+        isArchived={isArchived}
+        onEdit={() => setIsEditModalOpen(true)}
+        onToggleArchive={handleToggleArchive}
+        onDelete={() => setIsDeleteModalOpen(true)}
+      />
 
-        {/* People */}
-        <Card className="bg-white p-4 sm:p-5 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-zinc-500">
-              People
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center">
-              <Users className="w-4 h-4" weight="bold" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">
-              {stats.peopleCount}
-            </div>
-            <Link
-              to={`/trips/${trip.id}/people`}
-              className="text-[11px] font-bold text-teal-700 hover:underline flex items-center gap-1 mt-0.5"
-            >
-              <span>View squad roster</span>
-              <ArrowUpRight className="w-3 h-3" weight="bold" />
-            </Link>
-          </div>
-        </Card>
+      {/* 2. Live Trip Statistics */}
+      <TripStatsTiles
+        trip={trip}
+        totalSpent={totalSpent}
+        expensesCount={tripExpenses.length}
+        peopleCount={tripParticipants.length}
+      />
 
-        {/* Expenses */}
-        <Card className="bg-white p-4 sm:p-5 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-zinc-500">
-              Expenses
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
-              <Receipt className="w-4 h-4" weight="bold" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">
-              {stats.expensesCount}
-            </div>
-            <Link
-              to={`/trips/${trip.id}/expenses`}
-              className="text-[11px] font-bold text-purple-700 hover:underline flex items-center gap-1 mt-0.5"
-            >
-              <span>Browse receipts</span>
-              <ArrowUpRight className="w-3 h-3" weight="bold" />
-            </Link>
-          </div>
-        </Card>
+      {/* 3. Financial Status Snapshot */}
+      <TripFinancialSnapshot
+        trip={trip}
+        financialSummary={financialSummary}
+        expensesCount={tripExpenses.length}
+        onAddExpense={() => setIsAddExpenseOpen(true)}
+      />
 
-        {/* Your balance */}
-        <Card className="bg-white p-4 sm:p-5 flex flex-col justify-between border-2 border-zinc-900">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-zinc-500">
-              Your balance
-            </span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-              <Wallet className="w-4 h-4" weight="bold" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-black text-emerald-600 tracking-tight">
-              +{formatCurrency(stats.userBalance, trip.currency)}
-            </div>
-            <span className="text-[11px] font-bold text-emerald-700 mt-0.5 block">
-              You are owed in total
-            </span>
-          </div>
-        </Card>
+      {/* 4. Recent Expenses & 5. Squad Snapshot Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        <TripRecentExpenses
+          trip={trip}
+          expenses={tripExpenses}
+          participants={tripParticipants}
+          onAddExpense={() => setIsAddExpenseOpen(true)}
+        />
+
+        <TripSquadSnapshot
+          trip={trip}
+          participants={tripParticipants}
+          onAddPerson={() => setIsAddPersonOpen(true)}
+        />
       </div>
 
-      {/* Quick Sections: Recent Damage & Quick Settlements */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Recent Expenses preview */}
-        <Card className="p-5 sm:p-6 bg-white">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-black text-zinc-900">
-                Latest Expenses
-              </h2>
-              <p className="text-xs text-zinc-500">
-                Recent receipts logged by your group
-              </p>
-            </div>
-            <Link to={`/trips/${trip.id}/expenses`}>
-              <Button variant="ghost" size="sm">
-                View all
-              </Button>
-            </Link>
-          </div>
+      {/* 6. Quick Actions */}
+      <TripQuickActions
+        trip={trip}
+        onAddExpense={() => setIsAddExpenseOpen(true)}
+        onAddPerson={() => setIsAddPersonOpen(true)}
+      />
 
-          <div className="space-y-2.5">
-            {(trip.sampleExpenses || []).map((exp) => (
-              <div
-                key={exp.id}
-                className="flex items-center justify-between p-3 rounded-2xl bg-zinc-50 border border-zinc-200"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
-                    <Receipt className="w-5 h-5" weight="bold" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-zinc-900">{exp.title}</h4>
-                    <p className="text-xs text-zinc-500 font-medium">
-                      Paid by <span className="font-bold text-zinc-700">{exp.paidBy}</span>
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right font-black text-sm text-zinc-900">
-                  {formatCurrency(exp.amount, trip.currency)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+      {/* Modals */}
+      <EditTripModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        trip={trip}
+      />
 
-        {/* Squad Breakdown */}
-        <Card className="p-5 sm:p-6 bg-white">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-black text-zinc-900">
-                Travel Squad
-              </h2>
-              <p className="text-xs text-zinc-500">
-                Friends sharing this trip experience
-              </p>
-            </div>
-            <Link to={`/trips/${trip.id}/people`}>
-              <Button variant="ghost" size="sm">
-                Manage
-              </Button>
-            </Link>
-          </div>
+      <DeleteTripModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        trip={trip}
+        onDeleted={() => navigate('/trips')}
+      />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {(trip.people || []).map((person) => (
-              <div
-                key={person.id}
-                className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-50 border border-zinc-200"
-              >
-                <div
-                  style={{ backgroundColor: person.avatarBg || '#f97316' }}
-                  className="w-8 h-8 rounded-full border border-zinc-900 flex items-center justify-center text-xs font-black text-white"
-                >
-                  {person.name.charAt(0)}
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-zinc-900 flex items-center gap-1.5">
-                    {person.name}
-                    {person.isCurrentUser && (
-                      <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.2 rounded-full font-extrabold">
-                        You
-                      </span>
-                    )}
-                  </h4>
-                  <p className="text-xs text-zinc-500">Member</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
+      <AddExpenseModal
+        isOpen={isAddExpenseOpen}
+        onClose={() => setIsAddExpenseOpen(false)}
+        trip={trip}
+      />
+
+      <AddPersonModal
+        isOpen={isAddPersonOpen}
+        onClose={() => setIsAddPersonOpen(false)}
+        tripId={trip.id}
+      />
     </div>
   )
 }

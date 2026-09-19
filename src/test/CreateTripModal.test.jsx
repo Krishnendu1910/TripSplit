@@ -22,6 +22,7 @@ describe('CreateTripModal Form & Validation', () => {
     expect(screen.getByLabelText(/Start Date/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/End Date/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Currency/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Description \(Optional\)/i)).toBeInTheDocument()
   })
 
   it('shows validation errors when submitted empty', () => {
@@ -38,3 +39,4 @@ describe('CreateTripModal Form & Validation', () => {
     expect(screen.getByText(/Where are you heading\?/i)).toBeInTheDocument()
   })
 })
+

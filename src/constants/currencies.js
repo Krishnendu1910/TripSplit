@@ -10,3 +10,4 @@ export const SUPPORTED_CURRENCIES = [
 ]
 
 export const DEFAULT_CURRENCY = 'INR'
+
