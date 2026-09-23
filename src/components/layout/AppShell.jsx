@@ -1,13 +1,15 @@
 import { Link } from 'react-router-dom'
-import { Plus, Ticket, Compass } from '@phosphor-icons/react'
+import { Plus, Ticket, Compass, WifiSlash } from '@phosphor-icons/react'
 import { Navbar } from './Navbar'
 import { Button } from '../ui/Button'
 import { useUIStore } from '../../store/useUIStore'
+import { useNetworkStatus } from '../../hooks/useNetworkStatus'
 
 export function AppShell({ children }) {
   const openCreateTripModal = useUIStore((s) => s.openCreateTripModal)
   const toast = useUIStore((s) => s.toast)
   const clearToast = useUIStore((s) => s.clearToast)
+  const { isOnline } = useNetworkStatus()
 
   return (
     <div className="min-h-screen flex flex-col bg-[#faf9f5] text-zinc-900 selection:bg-orange-200">
@@ -66,6 +68,17 @@ export function AppShell({ children }) {
 
       {/* Main Content Area */}
       <main id="main-content" tabIndex={-1} className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-12 outline-none">
+        {/* Offline Status Notice */}
+        {!isOnline && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="mb-4 flex items-center gap-2.5 px-3.5 py-2.5 bg-amber-50 border-2 border-amber-800/80 rounded-xl text-amber-900 text-xs sm:text-sm font-bold shadow-playful-sm animate-in fade-in duration-200"
+          >
+            <WifiSlash className="w-4 h-4 shrink-0 text-amber-800" weight="bold" aria-hidden="true" />
+            <span>You&apos;re offline — your trip data is saved on this device.</span>
+          </div>
+        )}
         {children}
       </main>
 
