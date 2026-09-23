@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { AppShell } from '../components/layout/AppShell'
 import { AppRoutes } from '../App'
@@ -98,5 +98,124 @@ describe('TripSplit Route Navigation', () => {
   it('renders friendly trip not found state for unknown trip id', () => {
     renderWithRouter('/trips/non-existent-id')
     expect(screen.getByText(/Trip not found/i)).toBeInTheDocument()
+  })
+
+  describe('Navigation Active State & Route Awareness', () => {
+    function getNavLinks() {
+      const mainNav = screen.getByRole('navigation', { name: /Main navigation/i })
+      return {
+        home: within(mainNav).getByRole('link', { name: /Home/i }),
+        allTrips: within(mainNav).getByRole('link', { name: /All Trips/i }),
+        currentTrip: within(mainNav).getByRole('link', { name: /Current Trip/i }),
+      }
+    }
+
+    it('on "/" → Home is active, neither All Trips nor Current Trip is active', () => {
+      renderWithRouter('/')
+      const { home, allTrips, currentTrip } = getNavLinks()
+
+      expect(home).toHaveAttribute('aria-current', 'page')
+      expect(home).toHaveClass('bg-orange-500')
+
+      expect(allTrips).not.toHaveAttribute('aria-current')
+      expect(allTrips).not.toHaveClass('bg-orange-500')
+
+      expect(currentTrip).not.toHaveAttribute('aria-current')
+      expect(currentTrip).not.toHaveClass('bg-orange-500')
+    })
+
+    it('on "/trips" → ONLY All Trips is active, Current Trip is inactive', () => {
+      renderWithRouter('/trips')
+      const { home, allTrips, currentTrip } = getNavLinks()
+
+      expect(home).not.toHaveAttribute('aria-current')
+      expect(home).not.toHaveClass('bg-orange-500')
+
+      expect(allTrips).toHaveAttribute('aria-current', 'page')
+      expect(allTrips).toHaveClass('bg-orange-500')
+
+      expect(currentTrip).not.toHaveAttribute('aria-current')
+      expect(currentTrip).not.toHaveClass('bg-orange-500')
+    })
+
+    it('on "/trips/:tripId" → ONLY Current Trip is active, All Trips is inactive', () => {
+      renderWithRouter(`/trips/${sampleTrip.id}`)
+      const { home, allTrips, currentTrip } = getNavLinks()
+
+      expect(home).not.toHaveAttribute('aria-current')
+      expect(home).not.toHaveClass('bg-orange-500')
+
+      expect(allTrips).not.toHaveAttribute('aria-current')
+      expect(allTrips).not.toHaveClass('bg-orange-500')
+
+      expect(currentTrip).toHaveAttribute('aria-current', 'page')
+      expect(currentTrip).toHaveClass('bg-orange-500')
+    })
+
+    it('on "/trips/:tripId/expenses" → ONLY Current Trip is active', () => {
+      renderWithRouter(`/trips/${sampleTrip.id}/expenses`)
+      const { allTrips, currentTrip } = getNavLinks()
+
+      expect(allTrips).not.toHaveAttribute('aria-current')
+      expect(allTrips).not.toHaveClass('bg-orange-500')
+
+      expect(currentTrip).toHaveAttribute('aria-current', 'page')
+      expect(currentTrip).toHaveClass('bg-orange-500')
+    })
+
+    it('on "/trips/:tripId/people" → ONLY Current Trip is active', () => {
+      renderWithRouter(`/trips/${sampleTrip.id}/people`)
+      const { allTrips, currentTrip } = getNavLinks()
+
+      expect(allTrips).not.toHaveAttribute('aria-current')
+      expect(allTrips).not.toHaveClass('bg-orange-500')
+
+      expect(currentTrip).toHaveAttribute('aria-current', 'page')
+      expect(currentTrip).toHaveClass('bg-orange-500')
+    })
+
+    it('on "/trips/:tripId/settlement" → ONLY Current Trip is active', () => {
+      renderWithRouter(`/trips/${sampleTrip.id}/settlement`)
+      const { allTrips, currentTrip } = getNavLinks()
+
+      expect(allTrips).not.toHaveAttribute('aria-current')
+      expect(allTrips).not.toHaveClass('bg-orange-500')
+
+      expect(currentTrip).toHaveAttribute('aria-current', 'page')
+      expect(currentTrip).toHaveClass('bg-orange-500')
+    })
+
+    it('on "/trips/:tripId/settle" → ONLY Current Trip is active', () => {
+      renderWithRouter(`/trips/${sampleTrip.id}/settle`)
+      const { allTrips, currentTrip } = getNavLinks()
+
+      expect(allTrips).not.toHaveAttribute('aria-current')
+      expect(allTrips).not.toHaveClass('bg-orange-500')
+
+      expect(currentTrip).toHaveAttribute('aria-current', 'page')
+      expect(currentTrip).toHaveClass('bg-orange-500')
+    })
+
+    it('on unknown non-trip routes → neither All Trips nor Current Trip is active', () => {
+      renderWithRouter('/some-mysterious-unknown-path')
+      const { home, allTrips, currentTrip } = getNavLinks()
+
+      expect(home).not.toHaveAttribute('aria-current')
+      expect(allTrips).not.toHaveAttribute('aria-current')
+      expect(currentTrip).not.toHaveAttribute('aria-current')
+    })
+
+    it('verifies mobile navigation active states are also route-aware and mutually exclusive', () => {
+      renderWithRouter('/trips')
+      const mobileNav = screen.getByRole('navigation', { name: /Mobile navigation/i })
+      const mobileAllTrips = within(mobileNav).getByRole('link', { name: /All Trips/i })
+      const mobileCurrentTrip = within(mobileNav).getByRole('link', { name: /Current Trip/i })
+
+      expect(mobileAllTrips).toHaveAttribute('aria-current', 'page')
+      expect(mobileAllTrips).toHaveClass('text-orange-600')
+
+      expect(mobileCurrentTrip).not.toHaveAttribute('aria-current')
+      expect(mobileCurrentTrip).not.toHaveClass('text-orange-600')
+    })
   })
 })
