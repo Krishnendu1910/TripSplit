@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Receipt, Plus, Sparkle, PencilSimple, Trash } from '@phosphor-icons/react'
 import { Card } from '../../../components/ui/Card'
 import { Badge } from '../../../components/ui/Badge'
 import { Button } from '../../../components/ui/Button'
+import { Select } from '../../../components/ui/Select'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { formatCurrency } from '../../../utils/formatters'
 import { useExpenseStore } from '../../../store/useExpenseStore'
@@ -22,13 +23,58 @@ export function ExpensesList({ trip }) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [editingExpense, setEditingExpense] = useState(null)
   const [deletingExpense, setDeletingExpense] = useState(null)
+  const [selectedMemberId, setSelectedMemberId] = useState('all')
+
+  // Reset member filter when switching trips
+  useEffect(() => {
+    setSelectedMemberId('all')
+  }, [trip.id])
 
   // Support demo fixture fallback if a demo trip has no real expenses added yet
-  const isDemoFallback = trip.isDemo && realExpenses.length === 0 && Array.isArray(trip.sampleExpenses) && trip.sampleExpenses.length > 0
+  const isDemoFallback =
+    trip.isDemo &&
+    realExpenses.length === 0 &&
+    Array.isArray(trip.sampleExpenses) &&
+    trip.sampleExpenses.length > 0
   const displayExpenses = isDemoFallback ? trip.sampleExpenses : realExpenses
   const displayTotal = isDemoFallback
     ? trip.sampleExpenses.reduce((acc, curr) => acc + curr.amount, 0)
     : totalSpent
+
+  const participants = useMemo(() => {
+    if (tripParticipants.length > 0) return tripParticipants
+    if (isDemoFallback && Array.isArray(trip.people) && trip.people.length > 0) {
+      return trip.people
+    }
+    return tripParticipants
+  }, [tripParticipants, isDemoFallback, trip.people])
+
+  const selectedParticipant = participants.find(
+    (p) => p.id === selectedMemberId || p.name === selectedMemberId,
+  )
+  const isMemberInTrip = Boolean(selectedParticipant)
+  const isEveryoneSelected =
+    !selectedMemberId ||
+    selectedMemberId === 'all' ||
+    selectedMemberId === 'everyone' ||
+    selectedMemberId === 'Everyone' ||
+    !isMemberInTrip
+
+  const targetPayerId = selectedParticipant ? selectedParticipant.id : selectedMemberId
+
+  const visibleExpenses = useMemo(() => {
+    if (isEveryoneSelected) {
+      return displayExpenses
+    }
+    return displayExpenses.filter((exp) => {
+      if (isDemoFallback) {
+        if (exp.paidBy === targetPayerId) return true
+        if (selectedParticipant && exp.paidBy === selectedParticipant.name) return true
+        return false
+      }
+      return exp.paidBy === targetPayerId
+    })
+  }, [displayExpenses, isEveryoneSelected, isDemoFallback, targetPayerId, selectedParticipant])
 
   const getPayerName = (exp) => {
     if (isDemoFallback) {
@@ -124,82 +170,131 @@ export function ExpensesList({ trip }) {
         </div>
       )}
 
-      {/* Expenses List */}
-      <div className="space-y-3">
-        {displayExpenses.map((exp) => {
-          const payerName = getPayerName(exp)
-          const sharedCount = getParticipantCount(exp)
-          const isReal = !isDemoFallback
+      {/* Filter by Member Dropdown */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 bg-zinc-50/80 p-3.5 sm:p-4 rounded-2xl border border-zinc-200">
+        <div className="w-full sm:max-w-xs">
+          <Select
+            id="filter-by-member"
+            label="Filter by member"
+            value={isMemberInTrip ? targetPayerId : 'all'}
+            onChange={(e) => setSelectedMemberId(e.target.value)}
+          >
+            <option value="all">Everyone</option>
+            {participants.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </Select>
+        </div>
 
-          return (
-            <Card
-              key={exp.id}
-              className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-white"
+        {!isEveryoneSelected && (
+          <div className="flex items-center gap-2 self-start sm:self-end pb-1 text-xs">
+            <span className="text-zinc-500 font-semibold">
+              Showing {visibleExpenses.length} of {displayExpenses.length}{' '}
+              {displayExpenses.length === 1 ? 'expense' : 'expenses'}
+            </span>
+            <span className="text-zinc-300">•</span>
+            <button
+              type="button"
+              onClick={() => setSelectedMemberId('all')}
+              className="font-bold text-orange-600 hover:text-orange-700 underline underline-offset-2 cursor-pointer transition-colors"
             >
-              <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
-                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-orange-100 border-2 border-zinc-900 text-orange-600 flex items-center justify-center font-black shrink-0 shadow-playful-sm mt-0.5 sm:mt-0">
-                  <Receipt className="w-5 h-5 sm:w-6 sm:h-6" weight="bold" aria-hidden="true" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-base font-black text-zinc-900 break-words line-clamp-1">
-                    {exp.description || exp.title}
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-zinc-500 mt-1 font-semibold">
-                    {exp.category && (
-                      <Badge variant="default" className="text-[10px] py-0.5 capitalize">
-                        {exp.category}
-                      </Badge>
-                    )}
-                    <span className="truncate max-w-[180px]">
-                      Paid by <strong className="text-zinc-900">{payerName}</strong>
-                    </span>
-                    <span>•</span>
-                    <span>{sharedCount} {sharedCount === 1 ? 'person' : 'people'}</span>
-                    {exp.date && (
-                      <>
-                        <span>•</span>
-                        <span>{exp.date}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100">
-                <div className="text-left sm:text-right">
-                  <span className="text-base sm:text-xl font-black text-zinc-900 block">
-                    {formatCurrency(exp.amount, trip.currency)}
-                  </span>
-                  <span className="text-[11px] font-bold text-zinc-400 block">
-                    Split equally
-                  </span>
-                </div>
-
-                {isReal && (
-                  <div className="flex items-center gap-1 pl-2 border-l border-zinc-100">
-                    <button
-                      type="button"
-                      onClick={() => setEditingExpense(exp)}
-                      aria-label={`Edit ${exp.description || 'expense'}`}
-                      className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-zinc-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
-                    >
-                      <PencilSimple className="w-4 h-4" weight="bold" aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeletingExpense(exp)}
-                      aria-label={`Delete ${exp.description || 'expense'}`}
-                      className="p-2 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-red-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-                    >
-                      <Trash className="w-4 h-4" weight="bold" aria-hidden="true" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            </Card>
-          )
-        })}
+              Reset to Everyone
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Expenses List OR Member Filter Empty State */}
+      {visibleExpenses.length === 0 ? (
+        <EmptyState
+          icon={Receipt}
+          title="No expenses paid by this member yet."
+          description={`${selectedParticipant?.name || 'This member'} hasn't paid for any recorded expenses in this trip yet.`}
+          actionLabel="Show all expenses"
+          onAction={() => setSelectedMemberId('all')}
+          badgeText="0 Paid"
+        />
+      ) : (
+        <div className="space-y-3">
+          {visibleExpenses.map((exp) => {
+            const payerName = getPayerName(exp)
+            const sharedCount = getParticipantCount(exp)
+            const isReal = !isDemoFallback
+
+            return (
+              <Card
+                key={exp.id}
+                className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-white"
+              >
+                <div className="flex items-start sm:items-center gap-3.5 min-w-0 flex-1">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-orange-100 border-2 border-zinc-900 text-orange-600 flex items-center justify-center font-black shrink-0 shadow-playful-sm mt-0.5 sm:mt-0">
+                    <Receipt className="w-5 h-5 sm:w-6 sm:h-6" weight="bold" aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base font-black text-zinc-900 break-words line-clamp-1">
+                      {exp.description || exp.title}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-zinc-500 mt-1 font-semibold">
+                      {exp.category && (
+                        <Badge variant="default" className="text-[10px] py-0.5 capitalize">
+                          {exp.category}
+                        </Badge>
+                      )}
+                      <span className="truncate max-w-[180px]">
+                        Paid by <strong className="text-zinc-900">{payerName}</strong>
+                      </span>
+                      <span>•</span>
+                      <span>
+                        {sharedCount} {sharedCount === 1 ? 'person' : 'people'}
+                      </span>
+                      {exp.date && (
+                        <>
+                          <span>•</span>
+                          <span>{exp.date}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100">
+                  <div className="text-left sm:text-right">
+                    <span className="text-base sm:text-xl font-black text-zinc-900 block">
+                      {formatCurrency(exp.amount, trip.currency)}
+                    </span>
+                    <span className="text-[11px] font-bold text-zinc-400 block">
+                      Split equally
+                    </span>
+                  </div>
+
+                  {isReal && (
+                    <div className="flex items-center gap-1 pl-2 border-l border-zinc-100">
+                      <button
+                        type="button"
+                        onClick={() => setEditingExpense(exp)}
+                        aria-label={`Edit ${exp.description || 'expense'}`}
+                        className="p-2 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-zinc-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                      >
+                        <PencilSimple className="w-4 h-4" weight="bold" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeletingExpense(exp)}
+                        aria-label={`Delete ${exp.description || 'expense'}`}
+                        className="p-2 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-red-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                      >
+                        <Trash className="w-4 h-4" weight="bold" aria-hidden="true" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )
+          })}
+        </div>
+      )}
 
       {/* Modals */}
       <AddExpenseModal
@@ -224,3 +319,4 @@ export function ExpensesList({ trip }) {
     </div>
   )
 }
+

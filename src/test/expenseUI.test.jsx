@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { AppShell } from '../components/layout/AppShell'
 import { TripDetailPage } from '../pages/TripDetailPage'
@@ -234,6 +234,221 @@ describe('Expense Management UI Flow', () => {
     expect(screen.getByRole('heading', { level: 3, name: 'Hotel' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 3, name: 'Chicken Kabab' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 3, name: 'Smirnoff' })).toBeInTheDocument()
+  })
+
+  describe('Expense Member Filter', () => {
+    let p4
+
+    beforeEach(() => {
+      // p1 = Pritish, p2 = Deba, p3 = Rohan
+      p4 = useParticipantStore.getState().addParticipant({ tripId: trip.id, name: 'Sayantan' })
+
+      // P1 (Pritish) paid Petrol: 600, shared by [p1, p2, p3]
+      useExpenseStore.getState().createExpense({
+        tripId: trip.id,
+        description: 'Petrol',
+        amount: 600,
+        paidBy: p1.id,
+        participantIds: [p1.id, p2.id, p3.id],
+        date: '2026-10-10',
+      })
+
+      // P1 (Pritish) paid Snacks: 150, shared by [p1, p4]
+      useExpenseStore.getState().createExpense({
+        tripId: trip.id,
+        description: 'Snacks',
+        amount: 150,
+        paidBy: p1.id,
+        participantIds: [p1.id, p4.id],
+        date: '2026-10-10',
+      })
+
+      // P2 (Deba) paid Hotel: 3000, shared by everyone [p1, p2, p3, p4]
+      useExpenseStore.getState().createExpense({
+        tripId: trip.id,
+        description: 'Hotel Stay',
+        amount: 3000,
+        paidBy: p2.id,
+        participantIds: [p1.id, p2.id, p3.id, p4.id],
+        date: '2026-10-10',
+      })
+
+      // P3 (Rohan) paid Seafood Dinner: 1200, shared by [p1, p3]
+      useExpenseStore.getState().createExpense({
+        tripId: trip.id,
+        description: 'Seafood Dinner',
+        amount: 1200,
+        paidBy: p3.id,
+        participantIds: [p1.id, p3.id],
+        date: '2026-10-11',
+      })
+      // Note: p4 (Sayantan) has paid 0 expenses, but participates in Hotel Stay & Snacks
+    })
+
+    it('defaults to "Everyone" and displays all expenses for the trip', () => {
+      renderTripWithRouter(`/trips/${trip.id}/expenses`)
+
+      const filterSelect = screen.getByLabelText(/Filter by member/i)
+      expect(filterSelect).toBeInTheDocument()
+      expect(filterSelect.value).toBe('all')
+
+      // Check option labels
+      const options = within(filterSelect).getAllByRole('option')
+      const optionTexts = options.map((opt) => opt.textContent)
+      expect(optionTexts).toEqual(['Everyone', 'Pritish', 'Deba', 'Rohan', 'Sayantan'])
+
+      // All 4 expenses displayed
+      expect(screen.getByRole('heading', { level: 3, name: 'Petrol' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { level: 3, name: 'Snacks' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { level: 3, name: 'Hotel Stay' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { level: 3, name: 'Seafood Dinner' })).toBeInTheDocument()
+    })
+
+    it('filters expenses by selected participant using stable participant ID', () => {
+      renderTripWithRouter(`/trips/${trip.id}/expenses`)
+
+      const filterSelect = screen.getByLabelText(/Filter by member/i)
+      fireEvent.change(filterSelect, { target: { value: p1.id } })
+
+      // Pritish paid Petrol and Snacks
+      expect(screen.getByRole('heading', { level: 3, name: 'Petrol' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { level: 3, name: 'Snacks' })).toBeInTheDocument()
+
+      // Deba and Rohan's expenses must not be shown
+      expect(screen.queryByRole('heading', { level: 3, name: 'Hotel Stay' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('heading', { level: 3, name: 'Seafood Dinner' })).not.toBeInTheDocument()
+
+      expect(screen.getByText(/Showing 2 of 4 expenses/i)).toBeInTheDocument()
+    })
+
+    it('excludes expenses shared by a participant but paid by someone else', () => {
+      renderTripWithRouter(`/trips/${trip.id}/expenses`)
+
+      const filterSelect = screen.getByLabelText(/Filter by member/i)
+
+      // Pritish (p1) participated in Hotel Stay (paid by Deba) and Seafood Dinner (paid by Rohan)
+      // When filtering by Pritish, only expenses PAID by Pritish appear
+      fireEvent.change(filterSelect, { target: { value: p1.id } })
+      expect(screen.queryByRole('heading', { level: 3, name: 'Hotel Stay' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('heading', { level: 3, name: 'Seafood Dinner' })).not.toBeInTheDocument()
+
+      // When switching to Deba (p2), Hotel Stay appears, but Petrol and Snacks do not
+      fireEvent.change(filterSelect, { target: { value: p2.id } })
+      expect(screen.getByRole('heading', { level: 3, name: 'Hotel Stay' })).toBeInTheDocument()
+      expect(screen.queryByRole('heading', { level: 3, name: 'Petrol' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('heading', { level: 3, name: 'Snacks' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('heading', { level: 3, name: 'Seafood Dinner' })).not.toBeInTheDocument()
+    })
+
+    it('displays friendly empty state when a participant has paid no expenses, with an easy way to return to Everyone', () => {
+      renderTripWithRouter(`/trips/${trip.id}/expenses`)
+
+      const filterSelect = screen.getByLabelText(/Filter by member/i)
+
+      // Sayantan (p4) paid no expenses
+      fireEvent.change(filterSelect, { target: { value: p4.id } })
+
+      expect(screen.getByRole('heading', { level: 3, name: 'No expenses paid by this member yet.' })).toBeInTheDocument()
+      expect(screen.getByText(/Sayantan hasn't paid for any recorded expenses/i)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Show all expenses/i })).toBeInTheDocument()
+
+      // Click "Show all expenses" in empty state to return to Everyone
+      fireEvent.click(screen.getByRole('button', { name: /Show all expenses/i }))
+
+      expect(screen.getByLabelText(/Filter by member/i).value).toBe('all')
+      expect(screen.getByRole('heading', { level: 3, name: 'Petrol' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { level: 3, name: 'Hotel Stay' })).toBeInTheDocument()
+    })
+
+    it('supports returning to Everyone via toolbar "Reset to Everyone" button and via dropdown', () => {
+      renderTripWithRouter(`/trips/${trip.id}/expenses`)
+
+      const filterSelect = screen.getByLabelText(/Filter by member/i)
+      fireEvent.change(filterSelect, { target: { value: p3.id } })
+
+      expect(screen.getByRole('heading', { level: 3, name: 'Seafood Dinner' })).toBeInTheDocument()
+      expect(screen.queryByRole('heading', { level: 3, name: 'Petrol' })).not.toBeInTheDocument()
+
+      // Click "Reset to Everyone" in the toolbar
+      const resetBtn = screen.getByRole('button', { name: /Reset to Everyone/i })
+      fireEvent.click(resetBtn)
+
+      expect(filterSelect.value).toBe('all')
+      expect(screen.getByRole('heading', { level: 3, name: 'Petrol' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { level: 3, name: 'Hotel Stay' })).toBeInTheDocument()
+
+      // Switch to p2 via dropdown, then select 'all' via dropdown
+      fireEvent.change(filterSelect, { target: { value: p2.id } })
+      expect(screen.queryByRole('heading', { level: 3, name: 'Petrol' })).not.toBeInTheDocument()
+
+      fireEvent.change(filterSelect, { target: { value: 'all' } })
+      expect(screen.getByRole('heading', { level: 3, name: 'Petrol' })).toBeInTheDocument()
+    })
+
+    it('is strictly scoped to the current trip and does not leak filter or participants across trips', () => {
+      const trip2 = useTripStore.getState().createTrip({
+        name: 'Darjeeling Trip',
+        destination: 'Darjeeling, WB',
+        startDate: '2026-11-01',
+        endDate: '2026-11-05',
+        currency: 'INR',
+      })
+      const trip2Person = useParticipantStore.getState().addParticipant({
+        tripId: trip2.id,
+        name: 'Anirban',
+      })
+      useExpenseStore.getState().createExpense({
+        tripId: trip2.id,
+        description: 'Toy Train Ride',
+        amount: 1500,
+        paidBy: trip2Person.id,
+        participantIds: [trip2Person.id],
+        date: '2026-11-02',
+      })
+
+      // First render trip 1 and filter by p1
+      const { unmount } = renderTripWithRouter(`/trips/${trip.id}/expenses`)
+      fireEvent.change(screen.getByLabelText(/Filter by member/i), { target: { value: p1.id } })
+      expect(screen.getByRole('heading', { level: 3, name: 'Petrol' })).toBeInTheDocument()
+      unmount()
+
+      // Now render trip 2
+      renderTripWithRouter(`/trips/${trip2.id}/expenses`)
+
+      const filterSelect2 = screen.getByLabelText(/Filter by member/i)
+      expect(filterSelect2.value).toBe('all')
+
+      const options2 = within(filterSelect2).getAllByRole('option')
+      const optionTexts2 = options2.map((opt) => opt.textContent)
+      expect(optionTexts2).toEqual(['Everyone', 'Anirban'])
+
+      expect(screen.getByRole('heading', { level: 3, name: 'Toy Train Ride' })).toBeInTheDocument()
+      expect(screen.queryByRole('heading', { level: 3, name: 'Petrol' })).not.toBeInTheDocument()
+    })
+
+    it('dynamically reflects new expenses added while a member filter is active', async () => {
+      renderTripWithRouter(`/trips/${trip.id}/expenses`)
+
+      const filterSelect = screen.getByLabelText(/Filter by member/i)
+      fireEvent.change(filterSelect, { target: { value: p2.id } })
+
+      expect(screen.getByRole('heading', { level: 3, name: 'Hotel Stay' })).toBeInTheDocument()
+      expect(screen.queryByRole('heading', { level: 3, name: 'Cab Booking' })).not.toBeInTheDocument()
+
+      // Add a new expense paid by p2 (Deba)
+      const addButtons = screen.getAllByRole('button', { name: /Add Expense/i })
+      fireEvent.click(addButtons[0])
+
+      fireEvent.change(screen.getByLabelText(/What was it\?/i), { target: { value: 'Cab Booking' } })
+      fireEvent.change(screen.getByLabelText(/Amount/i), { target: { value: '750' } })
+      fireEvent.change(screen.getByLabelText(/Paid by/i), { target: { value: p2.id } })
+
+      fireEvent.click(screen.getByRole('button', { name: /Record Expense/i }))
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { level: 3, name: 'Cab Booking' })).toBeInTheDocument()
+      })
+    })
   })
 })
 
