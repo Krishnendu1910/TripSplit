@@ -9,7 +9,7 @@
 A modern, responsive group-trip expense manager that helps friends track shared expenses, split costs fairly, calculate individual balances, and settle up — without spreadsheets or complicated manual calculations.
 
 <p align="center">
-  <img src="docs/assets/tripsplit-overview.gif" alt="TripSplit animated product walkthrough" width="800" />
+  <img src="docs/assets/tripsplit-overview-hq.gif" alt="TripSplit animated product walkthrough" width="800" />
 </p>
 
 <p align="center">
