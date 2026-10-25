@@ -1,1291 +1,959 @@
+<div align="center">
+
 # 🧳 TripSplit
 
-> **Record the money. TripSplit does the math.**
+### So... who owes whom?
 
-TripSplit is a playful, product-focused trip expense splitting web
-application designed to replace the messy spreadsheet approach people
-often use after a trip.
+**Record the money. TripSplit does the math.**
 
-Instead of manually maintaining rows, columns, formulas, balances, and
-"who owes whom" calculations, TripSplit lets a group:
+A modern, responsive group-trip expense manager that helps friends track shared expenses, split costs fairly, calculate individual balances, and simplify settlements — without spreadsheets or complicated manual calculations.
 
--   👥 Create a trip and add the squad
--   💸 Record expenses in seconds
--   🙋 Choose who paid
--   🧑‍🤝‍🧑 Choose who shared an expense
--   🧮 Split expenses using multiple methods
--   📊 Automatically calculate each person's financial position
--   🔄 Recalculate balances whenever expenses change
--   🤝 Generate simplified settlement instructions
--   💾 Keep the current trip data persisted locally in the browser
+<p>
+  <img src="https://img.shields.io/badge/PROJECT%20STATUS-WORK%20IN%20PROGRESS-F59E0B?style=for-the-badge&labelColor=292929" alt="Project Status: Work in Progress" />
+</p>
 
-The idea is simple:
+<p>
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" />
+  <img src="https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/Tailwind%20CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4" />
+  <img src="https://img.shields.io/badge/JavaScript-ES%20Modules-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript" />
+</p>
 
-``` text
-You record what happened with the money.
-                         ↓
-              TripSplit handles the math.
-                         ↓
-             You see who pays whom.
+<p>
+  <img src="https://img.shields.io/badge/State-Zustand-443E38?style=flat-square" alt="Zustand" />
+  <img src="https://img.shields.io/badge/Testing-Vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white" alt="Vitest" />
+  <img src="https://img.shields.io/badge/PWA-Enabled-5A0FC8?style=flat-square" alt="Progressive Web App" />
+  <img src="https://img.shields.io/badge/Storage-Browser%20Local-64748B?style=flat-square" alt="Browser Local Storage" />
+</p>
+
+**[Explore the Repository](https://github.com/Krishnendu1910/TripSplit)**
+
+</div>
+
+---
+
+## 📌 Table of Contents
+
+- [Overview](#-overview)
+- [The Problem](#-the-problem)
+- [The Solution](#-the-solution)
+- [Key Features](#-key-features)
+- [How TripSplit Works](#-how-tripsplit-works)
+- [The Settlement Engine](#-the-settlement-engine)
+- [Technology Stack](#-technology-stack)
+- [Architecture](#-architecture)
+- [Project Status](#-project-status)
+- [Application Preview](#-application-preview)
+- [Getting Started](#-getting-started)
+- [Development Commands](#-development-commands)
+- [Application Routes](#-application-routes)
+- [Project Structure](#-project-structure)
+- [Financial Accuracy and Data Integrity](#-financial-accuracy-and-data-integrity)
+- [Accessibility and Responsive Design](#-accessibility-and-responsive-design)
+- [Testing and Quality](#-testing-and-quality)
+- [Known Limitations](#-known-limitations)
+- [Roadmap](#-roadmap)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Author](#-author)
+
+---
+
+## 💡 Overview
+
+TripSplit is a client-side group expense management application designed to make shared travel expenses easier to organize and settle.
+
+When a group travels together, one person might pay for petrol, another might book the hotel, and someone else might cover meals. At the end of the trip, figuring out everyone's share can become confusing.
+
+TripSplit provides a structured way to manage this process.
+
+Users can create trips, maintain participant lists, record shared expenses, choose how expenses should be divided, and view calculated balances and settlement suggestions.
+
+The application is built with React and JavaScript, with a dedicated financial domain layer for calculations and Zustand for application state management. Trip data is currently stored in the browser rather than synchronized through a remote backend.
+
+The long-term goal is to make TripSplit a complete, reliable group-expense management product that can grow beyond a local browser application.
+
+> **Project status:** TripSplit is under active development. The repository contains a substantial working application, including trip management, expense splitting, participant management, settlements, local persistence, and automated tests. Cloud synchronization, authentication, and other advanced capabilities should not be considered implemented merely because they appear on the roadmap.
+
+## 🎯 The Problem
+
+Group trips often create a familiar financial problem:
+
+- One person pays for transportation.
+- Another person pays for accommodation.
+- Someone else pays for food and activities.
+- Not everyone participates in every expense.
+- Different expenses may need different splitting methods.
+- People forget who paid what.
+- The group struggles to calculate who owes whom.
+
+Spreadsheets can solve much of the arithmetic, but they require manual data entry, formula maintenance, and repeated balance checking.
+
+Group chats make coordination easier, but they are not designed to maintain a reliable financial record.
+
+The result is often a long discussion about small amounts of money that should have been easy to settle.
+
+## ✅ The Solution
+
+TripSplit brings trip management, participant records, expense tracking, and settlement calculations into one interface.
+
+Instead of manually calculating the final amount owed by each person, users can record their expenses and let the application's financial logic calculate the resulting balances.
+
+The intended experience is straightforward:
+
+```text
+        🧳 Create a Trip
+               |
+               v
+        👥 Add Participants
+               |
+               v
+        💸 Record Expenses
+               |
+               v
+        🧮 Calculate Fair Shares
+               |
+               v
+        📊 Calculate Net Balances
+               |
+               v
+        🤝 Generate Settlements
+               |
+               v
+        ✅ Settle Up
 ```
 
-------------------------------------------------------------------------
+TripSplit is designed to reduce administrative work while keeping the underlying calculations understandable and testable.
 
-## 🎯 Why TripSplit Exists
+## ✨ Key Features
 
-After a real trip to Digha, expenses were maintained manually in an
-Excel sheet.
+### 🧳 Trip Management
 
-The spreadsheet worked, but the person maintaining it had to think
-about:
+Organize expenses around individual trips rather than keeping every record in one global list.
 
--   who paid for each expense
--   who participated in each expense
--   total trip spending
--   each person's contribution
--   each person's fair share
--   positive and negative balances
--   and finally, who should pay whom
+The application includes trip-oriented screens and state management for managing trip records.
 
-That is exactly the problem TripSplit is designed to simplify.
+The intended trip lifecycle includes:
 
-### The product principle
+- Create a trip.
+- View the trips you have recorded.
+- Open a trip's overview.
+- Manage its participants and expenses.
+- Review calculated balances and settlement suggestions.
+- Edit, archive, or delete a trip where supported by the current interface.
 
-> **Don't expose accounting complexity unless the user needs it.**
+Each trip acts as an independent financial workspace.
 
-The user should be able to say:
+### 👥 Participant Management
 
-> "Pot paid ₹3,000 for the hotel. Everyone shared it."
+Maintain a list of people who are part of a trip.
 
-and move on.
+Participant management supports the broader expense workflow by identifying who participated in a trip and whose balances need to be calculated.
 
-TripSplit takes care of the calculations underneath.
+The data model uses stable participant identifiers rather than relying exclusively on display names. This allows a participant's name to be changed without changing their identity in existing expense records.
 
-------------------------------------------------------------------------
+Participant removal must also account for existing financial references to prevent inconsistent records.
 
-# ✨ What TripSplit Does
+### 💸 Expense Tracking
 
-## 🗺️ Trip Management
+Record expenses against a specific trip and identify who paid for them.
 
-Create and manage trips with:
+Examples include:
 
--   Trip name
--   Destination
--   Start/end dates
--   Currency
--   Description
--   Active/archived status
+- Fuel and transportation.
+- Hotel bookings.
+- Meals and snacks.
+- Groceries and water.
+- Activities and tickets.
+- Other shared trip costs.
 
-Trips are isolated from one another using stable trip IDs.
+Expense records provide the foundation for calculating trip totals, participant shares, net balances, and settlement instructions.
 
-------------------------------------------------------------------------
+Expense editing and deletion should preserve the integrity of the associated trip and participant records.
 
-## 👥 People Management
+### 🧮 Multiple Expense-Splitting Methods
 
-Each trip has its own squad.
+TripSplit's financial model supports different ways of allocating expenses.
 
-Users can:
+| Splitting Method | Description |
+|---|---|
+| Equal split | Divide an expense equally among selected participants. |
+| Custom amounts | Specify the amount assigned to each participant. |
+| Percentage split | Allocate an expense using participant percentages. |
+| Shares-based split | Divide an expense according to assigned shares. |
+| Selected participants | Include only the people who participated in a particular expense. |
 
--   Add people
--   Rename people
--   View the squad
--   Remove people when it is safe to do so
+The available options depend on the expense form and the current implementation.
 
-Participant IDs remain stable when a person's name changes.
+For example, a hotel bill may be shared by everyone, while a particular meal may be divided only among the people who attended it.
 
-A participant with existing financial history cannot simply be deleted
-because doing so could orphan existing expenses.
+This flexibility helps the application model real group-trip expenses more accurately than a single per-person average.
 
-------------------------------------------------------------------------
+### 📊 Expense Summaries and Balances
 
-## 💸 Expense Management
+TripSplit calculates financial information from recorded trip data.
 
-Expenses are the core input of the application.
+The financial model distinguishes between:
 
-A quick expense flow asks:
+- Total expenditure.
+- Amount paid by each participant.
+- Fair share of the expenses.
+- Net amount owed to or receivable by each participant.
+- Suggested transfers between participants.
 
-``` text
-What was it?
-How much?
-Who paid?
-Who shared it?
-```
+The goal is to give users a clear answer to three questions:
 
-Example:
+**Who needs to pay? Who should receive money? How much?**
 
-``` text
-🏨 Hotel
-₹4,000
-Paid by Deba
-Shared by Everyone
-```
+### 🤝 Settlement Suggestions
 
-Advanced splitting is available when required:
+The settlement engine converts net participant balances into actionable payment instructions.
 
--   ⚖️ Everyone equally
--   👥 Selected people
--   💰 Custom amounts
--   📈 Percentage
--   🧩 Shares
-
-The default experience stays simple instead of forcing users into
-accounting-style forms.
-
-------------------------------------------------------------------------
-
-# 🧠 The Most Important Part: How TripSplit Calculates Money
-
-TripSplit separates **recording an expense** from **settling the trip**.
-
-When an expense is entered, the application does not immediately decide
-a final payment between two people.
-
-Instead, every expense produces two pieces of information:
-
-``` text
-WHO PAID?
-+
-WHO OWES A SHARE?
-```
-
-After all expenses are processed, TripSplit calculates:
-
-``` text
-Total Paid
-      ↓
-Total Owed
-      ↓
-Net Balance
-      ↓
-Debtors + Creditors
-      ↓
-Settlement Transactions
-```
-
-------------------------------------------------------------------------
-
-# 🧮 Mathematical Model
-
-For every participant:
-
-``` text
-Net Balance = Total Paid - Total Owed
-```
-
-Where:
-
--   **Total Paid** = money that person actually paid
--   **Total Owed** = that person's responsibility across all expenses
--   **Positive balance** = person should receive money
--   **Negative balance** = person needs to pay money
-
-### Example
-
-Suppose six people share a ₹600 expense and Denis pays the entire amount.
-
-``` text
-₹600 ÷ 6 = ₹100 per person
-```
-
-The financial state becomes:
-
-  Person         Paid   Owed     Net
-  ------------ ------ ------ -------
-  Denis           ₹600   ₹100   +₹500
-  Pot             ₹0   ₹100   -₹100
-  Rohan            ₹0   ₹100   -₹100
-  Siva         ₹0   ₹100   -₹100
-  Sayan         ₹0   ₹100   -₹100
-  Krishnendu       ₹0   ₹100   -₹100
-
-TripSplit therefore knows:
-
-``` text
-Denis should receive ₹500
-```
-
-and the other five people collectively need to provide ₹500.
-
-------------------------------------------------------------------------
-
-# 🪙 Exact Money Handling
-
-TripSplit does not rely on floating-point arithmetic for financial
-calculations.
-
-Money is represented using integer **minor currency units**.
-
-For INR:
-
-``` text
-₹1 = 100 paise
-```
-
-Therefore:
-
-``` text
-₹3,000 = 300,000 paise
-```
-
-This avoids common floating-point problems such as:
-
-``` text
-0.1 + 0.2 !== exactly 0.3
-```
-
-for financial calculations.
-
-When an amount cannot divide evenly, the remaining minor units are
-allocated deterministically.
-
-Example:
-
-``` text
-₹100 ÷ 3
-
-Person A → ₹33.34
-Person B → ₹33.33
-Person C → ₹33.33
-```
-
-Total:
-
-``` text
-₹33.34 + ₹33.33 + ₹33.33
-= ₹100.00
-```
-
-Nothing disappears.
-
-------------------------------------------------------------------------
-
-# 🧩 Supported Split Algorithms
-
-## ⚖️ Equal Split
-
-``` text
-Expense = ₹1,000
-People = 4
-
-₹1,000 ÷ 4
-= ₹250 each
-```
-
-------------------------------------------------------------------------
-
-## 👥 Selected People
-
-An expense can belong to only a subset of the squad.
-
-``` text
-Trip has 6 people
-
-Dinner:
-₹900
-
-Shared by:
-A
-B
-C
-
-₹900 ÷ 3
-= ₹300 each
-```
-
-The other three participants receive no obligation for that expense.
-
-------------------------------------------------------------------------
-
-## 💰 Custom Amounts
-
-Users can explicitly define:
-
-``` text
-A → ₹500
-B → ₹700
-C → ₹800
-```
-
-The financial engine verifies:
-
-``` text
-₹500 + ₹700 + ₹800
-= ₹2,000
-```
-
-The split must reconcile exactly with the expense amount.
-
-------------------------------------------------------------------------
-
-## 📈 Percentage Split
-
-Example:
-
-``` text
-₹1,000
-
-A → 50%
-B → 30%
-C → 20%
-```
-
-Result:
-
-``` text
-A → ₹500
-B → ₹300
-C → ₹200
-```
-
-------------------------------------------------------------------------
-
-## 🧩 Shares Split
-
-Example:
-
-``` text
-₹1,000
-
-A → 1 share
-B → 2 shares
-C → 1 share
-```
-
-Total shares:
-
-``` text
-1 + 2 + 1 = 4
-```
-
-Therefore:
-
-``` text
-A → ₹250
-B → ₹500
-C → ₹250
-```
-
-------------------------------------------------------------------------
-
-# 🧠 Behind the Scenes: Full Financial Pipeline
-
-``` mermaid
-flowchart TD
-    A["👤 User enters expense"] --> B["💸 Expense Model"]
-    B --> C["🧩 Calculate Expense Split"]
-    C --> D["📊 Calculate Trip Totals"]
-    D --> E["⚖️ Calculate Participant Balances"]
-    E --> F{"Balance"}
-    F -->|"Positive"| G["💰 Creditor"]
-    F -->|"Negative"| H["💸 Debtor"]
-    G --> I["🤝 Settlement Engine"]
-    H --> I
-    I --> J["🧾 Settlement Transactions"]
-    J --> K["🖥️ Settle Up UI"]
-```
-
-The React UI does not contain the financial formulas.
-
-The calculation lives in the domain/finance layer.
-
-That separation is intentional.
-
-------------------------------------------------------------------------
-
-# 🏗️ Application Architecture
-
-``` mermaid
-flowchart TB
-    UI["🎨 React UI"]
-
-    ROUTER["🧭 React Router"]
-
-    STORES["🗃️ Zustand Stores"]
-    TRIP["🧳 Trip Store"]
-    PEOPLE["👥 Participant Store"]
-    EXPENSE["💸 Expense Store"]
-    UISTORE["🪄 UI Store"]
-
-    PERSIST["💾 Persistence Adapter"]
-    STORAGE["🗄️ Browser LocalStorage"]
-
-    DOMAIN["🧠 Finance Domain"]
-    SPLIT["⚖️ Expense Split"]
-    TOTALS["📊 Trip Totals"]
-    BALANCE["💰 Balances"]
-    SETTLE["🤝 Settlements"]
-
-    UI --> ROUTER
-    ROUTER --> STORES
-
-    STORES --> TRIP
-    STORES --> PEOPLE
-    STORES --> EXPENSE
-    STORES --> UISTORE
-
-    TRIP --> PERSIST
-    PEOPLE --> PERSIST
-    EXPENSE --> PERSIST
-    PERSIST --> STORAGE
-
-    EXPENSE --> DOMAIN
-    PEOPLE --> DOMAIN
-
-    DOMAIN --> SPLIT
-    DOMAIN --> TOTALS
-    DOMAIN --> BALANCE
-    DOMAIN --> SETTLE
-
-    SETTLE --> UI
-```
-
-------------------------------------------------------------------------
-
-# 🔄 What Happens When You Add an Expense?
-
-Imagine the user enters:
-
-``` text
-🏨 Hotel
-Amount: ₹4,000
-Paid by: Denis
-Shared by: Everyone
-```
-
-The flow is:
-
-``` text
-1. User submits the form
-        ↓
-2. React validates the input
-        ↓
-3. Expense model creates a structured expense
-        ↓
-4. Zustand expense store updates
-        ↓
-5. Persistence adapter saves the state
-        ↓
-6. Financial summary sees the new expense
-        ↓
-7. Expense split is calculated
-        ↓
-8. Total paid/owed values are recalculated
-        ↓
-9. Net balances are recalculated
-        ↓
-10. Settlement transactions are recalculated
-        ↓
-11. Dashboard + Settle Up update automatically
-```
-
-No manual refresh is required.
-
-------------------------------------------------------------------------
-
-# ⚡ Reactive Updates
-
-TripSplit uses Zustand subscriptions together with the financial summary
-hook.
-
-Conceptually:
-
-``` text
-Expense Store changes
-        ↓
-Zustand notifies subscribers
-        ↓
-Financial summary recalculates
-        ↓
-React components re-render
-        ↓
-Dashboard changes immediately
-```
-
-So if:
-
-``` text
-Hotel = ₹4,000
-```
-
-is edited to:
-
-``` text
-Hotel = ₹4,500
-```
-
-the application can immediately update:
-
-``` text
-Total Spent
-Balances
-Who Pays
-Who Receives
-Settlement Transactions
-```
-
-------------------------------------------------------------------------
-
-# 🤝 How "Who Pays Whom" Is Calculated
-
-Once all expenses have been processed, TripSplit has a net balance for
-every participant.
-
-Example:
-
-``` text
-Pot         +₹1,266.67
-Denis        +₹277.67
-Siva    +₹177.67
-
-Rohan       -₹102.33
-Sayan    -₹840.33
-Krishnendu  -₹819.33
-```
-
-Positive balances are people who should receive money.
-
-Negative balances are people who need to pay.
-
-The settlement engine then matches these two groups.
-
-Conceptually:
-
-``` text
-                 NET BALANCES
-                      │
-          ┌───────────┴───────────┐
-          ↓                       ↓
-     💰 RECEIVE               💸 PAY
-          │                       │
-          └───────────┬───────────┘
-                      ↓
-             🤝 MATCH BALANCES
-                      ↓
-             🧾 SETTLEMENTS
-                      ↓
-          A → B ₹X
-          C → D ₹Y
-          E → F ₹Z
-```
-
-The purpose is to avoid showing users the entire accounting graph.
-
-They see actionable payment instructions instead.
-
-------------------------------------------------------------------------
-
-# 🧪 Real Digha Spreadsheet Inspiration
-
-TripSplit was inspired by a real Digha trip expense sheet.
-
-The spreadsheet had:
-
--   Multiple petrol expenses
--   Hotel
--   Lunch
--   Chicken Kabab / Chowmi
--   Dinner
--   Water
--   Breakfast
--   Another lunch
--   Smirnoff
--   Individual payer columns
--   Total expenditure
--   Per-head expense
--   Participant balances
-
-The spreadsheet's total expense was:
-
-``` text
-₹13,934
-```
-
-The important product lesson was not simply "make the same spreadsheet
-in React."
-
-It was:
-
-> **Take the same financial truth and remove the spreadsheet burden.**
-
-------------------------------------------------------------------------
-
-# ⚠️ Data Integrity Example from the Digha Sheet
-
-The supplied spreadsheet contains a useful validation lesson.
-
-Its total expense is:
-
-``` text
-₹13,934
-```
-
-But the visible individual payment entries add up to:
-
-``` text
-₹13,894
-```
-
-The difference is:
-
-``` text
-₹40
-```
-
-The visible water expense is:
-
-``` text
-₹472
-```
-
-while the individual column contains:
-
-``` text
-₹432
-```
-
-So the sheet contains a ₹40 reconciliation gap.
-
-TripSplit's financial architecture is designed around invariants so that
-these kinds of inconsistencies can be detected rather than silently
-turning into incorrect settlement instructions.
-
-The important invariants are:
-
-``` text
-Total Paid = Total Expense
-Total Owed = Total Expense
-
-and therefore:
-
-Σ Net Balances = 0
-```
-
-This is one of the reasons the financial engine is isolated from the UI
-and heavily tested.
-
-------------------------------------------------------------------------
-
-# 🧱 Technology Stack
-
-## ⚛️ React
-
-**Role:** UI layer.
-
-React builds the actual TripSplit interface:
-
--   Pages
--   Cards
--   Forms
--   Modals
--   Expense lists
--   People lists
--   Dashboard
--   Settle Up
-
-React is responsible for presenting state, not owning the financial
-mathematics.
-
-------------------------------------------------------------------------
-
-## ⚡ Vite
-
-**Role:** Development server + production build tooling.
-
-Vite provides:
-
--   Fast local development
--   Hot module replacement
--   Production bundling
--   Build pipeline
-
-Development:
-
-``` bash
-npm run dev
-```
-
-Production build:
-
-``` bash
-npm run build
-```
-
-------------------------------------------------------------------------
-
-## 🎨 Tailwind CSS v4
-
-**Role:** Styling and responsive design.
-
-Tailwind is used for:
-
--   Layout
--   Spacing
--   Typography
--   Responsive behavior
--   States
--   Component styling
--   Product visual system
-
-TripSplit intentionally combines a structured product UI with a playful
-travel personality.
-
-------------------------------------------------------------------------
-
-## 🧭 React Router
-
-**Role:** Client-side navigation.
-
-Routes include:
-
-``` text
-/
- /trips
- /trips/:tripId
- /trips/:tripId/expenses
- /trips/:tripId/people
- /trips/:tripId/settlement
-```
-
-This allows TripSplit to behave like a real SPA rather than a collection
-of disconnected pages.
-
-------------------------------------------------------------------------
-
-## 🗃️ Zustand
-
-**Role:** Application state management.
-
-Separate stores handle different responsibilities:
-
-``` text
-useTripStore
-useParticipantStore
-useExpenseStore
-useUIStore
-```
-
-This keeps state predictable and avoids pushing application state
-through deeply nested React props.
-
-------------------------------------------------------------------------
-
-## 💾 LocalStorage + Persistence Adapter
-
-**Role:** Local persistence.
-
-TripSplit currently uses browser-local persistence instead of a remote
-backend.
-
-The persistence adapter provides a boundary between:
-
-``` text
-Application State
-        ↓
-Persistence Layer
-        ↓
-Browser Storage
-```
-
-This also makes future persistence changes easier because components do
-not need to know how storage works internally.
-
-------------------------------------------------------------------------
-
-## 🧮 Finance Domain Layer
-
-**Role:** Financial correctness.
-
-The finance domain contains the actual money logic:
-
-``` text
-calculateExpenseSplit()
-calculateTripTotals()
-calculateBalances()
-calculateSettlements()
-```
-
-The finance layer is intentionally independent from React components.
-
-This means:
-
-``` text
-UI can change
-without rewriting
-financial mathematics.
-```
-
-------------------------------------------------------------------------
-
-## 📅 date-fns
-
-**Role:** Date handling and formatting.
-
-Used for predictable handling of:
-
--   Trip date ranges
--   Expense dates
--   Date formatting
--   Date comparisons
-
-------------------------------------------------------------------------
-
-## 🎨 Phosphor Icons
-
-**Role:** Product iconography.
-
-Phosphor provides the application's icon system.
-
-Icons are used to communicate actions and states without turning the UI
-into a spreadsheet-like interface.
-
-Examples:
-
-``` text
-💸 Expenses
-👥 People
-🤝 Settlement
-🧳 Trips
-✓ Completed
-→ Payment direction
-```
-
-------------------------------------------------------------------------
-
-## 🧪 Vitest
-
-**Role:** Automated testing.
-
-Vitest verifies the application logic and behavior.
-
-------------------------------------------------------------------------
-
-## 🧪 Testing Library
-
-**Role:** User-facing UI testing.
-
-Testing Library helps verify the application from the perspective of
-actual user interactions rather than relying only on implementation
-details.
-
-------------------------------------------------------------------------
-
-## 🧹 ESLint
-
-**Role:** Code quality and consistency.
-
-It catches common JavaScript/React problems before they become runtime
-bugs.
-
-------------------------------------------------------------------------
-
-## 📝 Prettier
-
-**Role:** Consistent code formatting.
-
-This keeps the codebase readable and consistent as the project grows.
-
-------------------------------------------------------------------------
-
-# 🧩 Why the Architecture Is Split This Way
-
-A major design goal is:
-
-> **Separation of concerns.**
+Instead of asking every participant to reimburse every other participant individually, the engine matches participants who owe money with participants who should receive money.
 
 For example:
 
-``` text
-React Component
-     ↓
-"What should I display?"
+```text
+Alex paid more than their share.
 
-Zustand Store
-     ↓
-"What is the current application state?"
+Sam owes Alex ₹300.
+Riya owes Alex ₹150.
 
-Persistence
-     ↓
-"How do I keep the state?"
+Suggested settlements:
 
-Finance Domain
-     ↓
-"What is mathematically correct?"
-
-Settlement Engine
-     ↓
-"How can the financial result become actionable payments?"
+Sam  → Alex  ₹300
+Riya → Alex  ₹150
 ```
 
-Each layer has a specific responsibility.
+The names and amounts above are illustrative. Actual settlements are calculated from the expenses and participants recorded in the application.
 
-------------------------------------------------------------------------
+The intended result is a simpler settlement process with fewer unnecessary transfers.
 
-# 🔐 Data Integrity
+### 💾 Browser-Based Persistence
 
-TripSplit contains safeguards against common data corruption scenarios.
+TripSplit currently uses browser-local persistence rather than a remote database.
 
-### Trip isolation
+An application persistence layer separates storage concerns from the financial and interface layers.
 
-Every participant and expense belongs to a specific trip.
+This allows the application to retain supported trip data between browser sessions without requiring a backend service for the current local workflow.
 
-``` text
-expense.tripId
-participant.tripId
+However, browser-local storage is not cloud synchronization. Data stored in one browser profile is not automatically shared with other users or devices.
+
+### 📱 Responsive Interface
+
+The application is designed to adapt to desktop, tablet, and mobile screen sizes.
+
+Its interface uses reusable components, responsive layouts, and touch-friendly controls to keep trip management practical on smaller screens.
+
+### 📲 Progressive Web App Foundation
+
+The Vite configuration includes a Progressive Web App setup using `vite-plugin-pwa`.
+
+The configuration includes a web app manifest, application icons, standalone display settings, and service-worker asset caching.
+
+This provides a foundation for an app-like installation experience and supported offline loading behavior.
+
+**Important:** PWA support does not mean that every application operation has been verified to work offline. Offline data behavior, caching, and recovery should be tested in the target deployment environment.
+
+---
+
+## 🔄 How TripSplit Works
+
+TripSplit separates the user interface, application state, persistence, financial calculations, and settlement logic.
+
+### Step 1: Create a Trip
+
+Create a workspace for a specific trip.
+
+Keeping trips separate makes it easier to understand which expenses and participants belong together.
+
+### Step 2: Add Participants
+
+Add the people involved in the trip.
+
+Each participant is represented by a stable identifier so that existing financial records can continue to refer to the same person even if their display name changes.
+
+### Step 3: Record Expenses
+
+Create expense records containing relevant information, including the payer, amount, participants, and split configuration.
+
+Every expense belongs to a particular trip.
+
+### Step 4: Calculate Expense Shares
+
+The financial domain layer calculates how much of each expense belongs to each participating person.
+
+The calculation depends on the selected splitting method and the participants included in the expense.
+
+### Step 5: Calculate Net Balances
+
+TripSplit combines amounts paid and amounts owed to determine the net position of every participant.
+
+A positive balance indicates that the person should receive money. A negative balance indicates that the person needs to pay.
+
+### Step 6: Generate Settlements
+
+The settlement engine matches people who owe money with people who should receive money.
+
+The result is a list of suggested transfers that can settle the recorded balances.
+
+### Step 7: Review and Settle
+
+Participants can use the suggested transfers to coordinate repayments outside the application's financial calculation flow.
+
+The application calculates suggested obligations; users should not interpret these suggestions as confirmation that money has actually been transferred.
+
+## 🧮 The Settlement Engine
+
+The settlement engine is an important part of TripSplit's architecture.
+
+Its job is to turn a collection of expenses into a simpler set of payment instructions.
+
+### Understanding Net Balances
+
+For each participant:
+
+```text
+Net Balance = Total Paid - Total Share Owed
 ```
 
-This prevents Trip A's financial data from appearing inside Trip B.
+For example:
 
-### Safe participant removal
+| Participant | Total Paid | Fair Share | Net Balance |
+|---|---:|---:|---:|
+| Alex | ₹900 | ₹300 | +₹600 |
+| Sam | ₹0 | ₹300 | -₹300 |
+| Riya | ₹0 | ₹300 | -₹300 |
+| **Total** | **₹900** | **₹900** | **₹0** |
 
-A participant with financial history cannot simply disappear and leave
-broken references behind.
+Alex paid ₹900 but is responsible for only ₹300 of the total expense. Alex should therefore receive ₹600.
 
-### Stable participant IDs
+Sam and Riya each owe ₹300.
 
-Renaming a person does not change their identity inside existing
-expenses.
+One valid settlement is:
 
-### Expense identity
-
-Editing an expense preserves its identity and trip relationship.
-
-### Cascading trip deletion
-
-Deleting a trip removes its associated participants and expenses rather
-than leaving orphan records.
-
-### Resilient hydration
-
-Malformed or invalid stored data is handled defensively rather than
-being allowed to crash the application.
-
-------------------------------------------------------------------------
-
-# ♿ Accessibility
-
-TripSplit is designed to be usable beyond mouse-only interaction.
-
-The interface includes:
-
--   Keyboard navigation
--   Visible focus states
--   Modal focus handling
--   Escape-to-close behavior
--   Semantic headings
--   Accessible labels
--   Screen-reader descriptions
--   Touch-friendly controls
--   Responsive layouts
--   Reduced-motion support
-
-The goal is not just to make the UI look playful, but to keep it usable.
-
-------------------------------------------------------------------------
-
-# 📱 Responsive Design
-
-TripSplit adapts across:
-
-``` text
-🖥️ Desktop
-📱 Mobile
-📟 Tablet
+```text
+Sam  → Alex  ₹300
+Riya → Alex  ₹300
 ```
 
-The layout changes rather than simply shrinking.
+After these payments, the expense is fully settled.
 
-Examples:
+### Why Settlement Optimization Matters
 
-``` text
-Desktop
-→ multi-column dashboard
+For larger groups, the number of possible reimbursement relationships can grow quickly.
 
-Tablet
-→ compact multi-column layout
+TripSplit is designed to avoid unnecessary transfers by matching people with negative balances to people with positive balances.
 
-Mobile
-→ stacked content
-→ touch-friendly actions
-→ mobile navigation
+The objective is to make the resulting instructions easier to understand and execute.
+
+A settlement calculation must also preserve the financial invariants of the underlying trip. It should never silently lose or create money because of a rounding error or an inconsistent expense record.
+
+---
+
+## 🧰 Technology Stack
+
+TripSplit uses a JavaScript-based frontend architecture.
+
+| Technology | Role |
+|---|---|
+| React 19 | Component-based user interface. |
+| Vite | Development server and production build tooling. |
+| JavaScript ES Modules | Application language and module system. |
+| React Router 7 | Client-side navigation. |
+| Tailwind CSS 4 | Styling and responsive layouts. |
+| Zustand 5 | Application state management. |
+| date-fns 4 | Date operations and formatting. |
+| Phosphor Icons | Interface iconography. |
+| clsx | Conditional class-name composition. |
+| tailwind-merge | Resolving conflicting Tailwind classes. |
+| vite-plugin-pwa | Progressive Web App configuration. |
+| Vitest | Automated test runner. |
+| React Testing Library | UI testing based on user-facing behavior. |
+| jsdom | Browser-like test environment. |
+| ESLint | Static analysis and code-quality checks. |
+| Prettier | Code formatting. |
+
+### Why JavaScript?
+
+TripSplit uses JavaScript and JSX rather than TypeScript.
+
+This keeps the project aligned with its existing codebase while allowing the financial domain, state management, and interface components to remain separated into focused modules.
+
+### Why React and Vite?
+
+React provides the component model needed for reusable forms, cards, modals, summaries, and trip views.
+
+Vite supports fast local development, hot module replacement, and optimized production builds.
+
+### Why Zustand?
+
+Zustand organizes the application's state without requiring deeply nested prop passing.
+
+TripSplit maintains separate stores for concerns such as trip management, participant management, expense management, and UI state.
+
+### Why a Separate Financial Domain?
+
+Financial calculations should not depend on how a component is rendered.
+
+By keeping calculation logic outside React components, TripSplit can change its interface without unnecessarily rewriting the rules governing expense allocation and settlement.
+
+## 🏗️ Architecture
+
+TripSplit follows a client-side architecture organized around feature modules and shared application infrastructure.
+
+```text
+                     TripSplit
+                         |
+                         v
+                  React Application
+                         |
+             +-----------+-----------+
+             |                       |
+             v                       v
+        UI Components            Page Routes
+             |                       |
+             +-----------+-----------+
+                         |
+                         v
+                   Zustand Stores
+             +-----------+-----------+
+             |           |           |
+             v           v           v
+           Trips      People      Expenses
+             |           |           |
+             +-----------+-----------+
+                         |
+                         v
+                  Finance Domain
+             +-----------+-----------+
+             |                       |
+             v                       v
+       Expense Splitting        Net Balances
+                                     |
+                                     v
+                              Settlement Engine
+                         |
+                         v
+                  Persistence Adapter
+                         |
+                         v
+                  Browser Local Storage
 ```
 
-------------------------------------------------------------------------
+### Architectural Responsibilities
 
-# 🧪 Quality Gates
+**UI components**
 
-The application has been tested across:
+Present information, collect user input, and provide interactive controls.
 
--   Trip creation/edit/archive/delete
--   Participant creation/edit/removal rules
--   Expense creation/edit/delete
--   Equal splits
--   Custom splits
--   Percentage splits
--   Shares
--   Selected participants
--   Balance invariants
--   Settlement generation
--   Trip isolation
--   LocalStorage hydration
--   Invalid/deleted trip routes
--   Dashboard reactivity
--   Settle Up UI
--   Accessibility behavior
+**Pages and routing**
 
-Current verified project state:
+Organize application navigation and provide the views associated with trips and settlements.
 
-``` text
-✅ 245 tests passing
-✅ 19 test suites
-✅ 0 lint errors
-✅ 0 lint warnings
-✅ Production build passing
+**Zustand stores**
+
+Manage application state and coordinate state changes.
+
+**Feature modules**
+
+Group trip, participant, expense, financial, and settlement functionality by domain.
+
+**Finance domain**
+
+Calculate expense shares, trip totals, and participant balances.
+
+**Settlement engine**
+
+Convert calculated balances into payment suggestions.
+
+**Persistence layer**
+
+Handle browser-based storage separately from interface components and financial calculations.
+
+This separation makes the application easier to maintain and gives future storage or synchronization work a clearer integration point.
+
+## 🚧 Project Status
+
+TripSplit is actively being developed toward a complete group-expense management product.
+
+| Area | Status |
+|---|---|
+| React application and routing | Implemented foundation |
+| Responsive application interface | Implemented; continued verification recommended |
+| Trip management | Implemented foundation |
+| Participant management | Implemented foundation |
+| Expense management | Implemented foundation |
+| Multiple expense-splitting methods | Supported by the financial model; verify individual UI flows |
+| Net balance calculation | Implemented financial logic |
+| Settlement suggestions | Implemented financial logic |
+| Zustand state management | Implemented |
+| Browser-local persistence | Implemented foundation |
+| PWA configuration | Present in Vite configuration |
+| Automated testing | Vitest and Testing Library setup present |
+| Cloud synchronization | Not currently implemented |
+| User authentication | Not currently implemented |
+| Multi-device shared trips | Future work |
+| External payment processing | Not currently implemented |
+
+The status table describes the current repository architecture and feature foundations. It is not a guarantee that every workflow has been tested successfully in every environment.
+
+## 🖥️ Application Preview
+
+TripSplit includes a dedicated home page, trip listing, trip detail views, and a settlement view.
+
+The application is intended to present financial information in a clear, approachable interface rather than requiring users to manage rows and formulas manually.
+
+A verified public demo URL and a maintained set of screenshots are not documented in this README.
+
+This section can be expanded with screenshots captured from the actual application as key workflows and deployment arrangements are finalized.
+
+Suggested screenshots:
+
+- Home page and dashboard.
+- Trip listing and trip creation.
+- Participant management.
+- Expense creation and split configuration.
+- Trip expense summary.
+- Settlement suggestions.
+
+Do not treat conceptual mockups as screenshots of completed functionality.
+
+## ⚙️ Getting Started
+
+Follow these instructions to run TripSplit locally.
+
+### Prerequisites
+
+Install the following:
+
+- [Git](https://git-scm.com/)
+- [Node.js](https://nodejs.org/) with a compatible npm version.
+- A code editor such as [Visual Studio Code](https://code.visualstudio.com/).
+- A modern web browser.
+
+You do not need a MongoDB instance or backend server for the current browser-local application.
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/Krishnendu1910/TripSplit.git
+cd TripSplit
 ```
 
-------------------------------------------------------------------------
+### 2. Install Dependencies
 
-# 🗂️ High-Level Project Structure
+Run the following command from the project root:
 
-``` text
+```bash
+npm install
+```
+
+### 3. Start the Development Server
+
+```bash
+npm run dev
+```
+
+Vite will display a local URL in the terminal, usually:
+
+```text
+http://localhost:5173
+```
+
+Open the displayed URL in your browser.
+
+### 4. Start Exploring
+
+Use the application to explore its trip-oriented workflow:
+
+1. Open the home page.
+2. Start creating a trip.
+3. Add participants.
+4. Record expenses against the trip.
+5. Review expense summaries and balances.
+6. Open the settlement view to inspect suggested transfers.
+
+The exact options available depend on the current implementation.
+
+### Local Data Note
+
+TripSplit currently stores application data locally in the browser. Clearing site data, changing browser profiles, or moving to another device can affect access to saved records.
+
+Do not treat browser-local data as a cloud backup.
+
+## 🧪 Development Commands
+
+The project defines the following npm scripts.
+
+### Development Server
+
+```bash
+npm run dev
+```
+
+Starts Vite in development mode.
+
+### Production Build
+
+```bash
+npm run build
+```
+
+Builds the application for production.
+
+The generated build output is placed in the `dist/` directory.
+
+### Preview Production Build
+
+```bash
+npm run preview
+```
+
+Starts Vite's local preview server for the generated production build.
+
+### Run Tests
+
+```bash
+npm run test
+```
+
+Runs the Vitest test suite once.
+
+### Watch Tests
+
+```bash
+npm run test:watch
+```
+
+Runs Vitest in watch mode for ongoing development.
+
+### Lint the Project
+
+```bash
+npm run lint
+```
+
+Runs ESLint against the project.
+
+### Format the Code
+
+```bash
+npm run format
+```
+
+Runs Prettier with the project's configured formatting command.
+
+**Note:** The presence of these scripts does not prove that they all pass on the current commit. Run them in your local environment or in CI to verify the current project state.
+
+## 🧭 Application Routes
+
+The application uses React Router to organize the primary views.
+
+| Route | Purpose |
+|---|---|
+| `/` | Home page and entry point. |
+| `/trips` | Trip listing. |
+| `/trips/:tripId` | Trip overview. |
+| `/trips/:tripId/expenses` | Trip expense view. |
+| `/trips/:tripId/people` | Trip participant view. |
+| `/trips/:tripId/settlement` | Settlement view for a particular trip. |
+| `/trips/:tripId/settle` | Alternate settlement route. |
+| `/settlement` | Redirects to an appropriate trip's settlement view when a trip is available. |
+
+Unknown routes are handled by a not-found page.
+
+Routes that reference a particular trip depend on the corresponding trip data being available.
+
+## 📁 Project Structure
+
+The repository separates application pages, feature modules, shared components, state stores, utilities, and persistence.
+
+```text
 TripSplit/
 │
-├── 📁 public/
-│   └── _redirects
+├── public/
+│   ├── _redirects
+│   ├── favicon.svg
+│   ├── icons.svg
+│   └── PWA assets
 │
-├── 📁 src/
+├── src/
+│   ├── assets/
 │   │
-│   ├── 📁 components/
-│   │   └── shared UI / layout components
+│   ├── components/
+│   │   ├── layout/
+│   │   └── ui/
 │   │
-│   ├── 📁 features/
-│   │   ├── 🧳 trips/
-│   │   ├── 👥 participants/
-│   │   ├── 💸 expenses/
-│   │   ├── 🧮 finance/
-│   │   └── 🤝 settlements/
+│   ├── constants/
 │   │
-│   ├── 📁 store/
+│   ├── features/
+│   │   ├── trips/
+│   │   │   └── components/
+│   │   ├── participants/
+│   │   ├── expenses/
+│   │   ├── finance/
+│   │   └── settlements/
+│   │
+│   ├── hooks/
+│   │
+│   ├── lib/
+│   │   └── persistence/
+│   │
+│   ├── pages/
+│   │   ├── HomePage.jsx
+│   │   ├── TripsPage.jsx
+│   │   ├── TripDetailPage.jsx
+│   │   └── NotFoundPage.jsx
+│   │
+│   ├── store/
 │   │   ├── useTripStore.js
 │   │   ├── useParticipantStore.js
 │   │   ├── useExpenseStore.js
 │   │   └── useUIStore.js
 │   │
-│   ├── 📁 lib/
-│   │   └── persistence/
+│   ├── test/
+│   │   └── setup.js
 │   │
-│   ├── 📁 utils/
+│   ├── utils/
 │   │
 │   ├── App.jsx
-│   ├── main.jsx
-│   └── index.css
+│   ├── App.test.jsx
+│   ├── index.css
+│   └── main.jsx
 │
-├── 📄 package.json
-├── 📄 vite.config.js
-├── 📄 eslint.config.js
-├── 📄 README.md
-└── 📄 .gitignore
+├── .gitignore
+├── eslint.config.js
+├── index.html
+├── package.json
+├── package-lock.json
+├── vite.config.js
+└── README.md
 ```
 
-------------------------------------------------------------------------
+This is a high-level guide to the project layout. Individual feature modules may contain additional components, utilities, tests, and domain-specific files.
 
-# 🚀 Getting Started
+## 🔐 Financial Accuracy and Data Integrity
 
-## 1. Clone
+Financial correctness is fundamental to an expense-splitting application.
 
-``` bash
-git clone https://github.com/Krishnendu1910/TripSplit.git
-cd TripSplit
+TripSplit is designed around several important invariants and data-integrity principles.
+
+### 1. Expenses Belong to a Trip
+
+Every expense and participant should remain associated with the correct trip.
+
+```text
+expense.tripId
+participant.tripId
 ```
 
-## 2. Install dependencies
+This relationship helps prevent records from one trip from affecting another trip's balances.
 
-``` bash
-npm install
+### 2. Participant Identity Remains Stable
+
+A participant's identifier should not change just because their name is edited.
+
+Stable identity prevents existing expense references from becoming invalid after a simple profile change.
+
+### 3. Financial References Must Remain Valid
+
+Removing a participant must account for any expenses and balance calculations that refer to them.
+
+Likewise, editing or deleting an expense must preserve the consistency of its trip relationship.
+
+### 4. Trip Deletion Must Avoid Orphaned Records
+
+When a trip and its related data are removed, the application should avoid leaving disconnected participants or expenses behind.
+
+### 5. Stored Data Must Be Handled Defensively
+
+Browser storage may be missing, outdated, or malformed.
+
+Application hydration should validate data and handle invalid records safely instead of allowing malformed stored state to crash the application.
+
+### 6. Expense and Share Totals Must Reconcile
+
+For a fully allocated set of expenses:
+
+```text
+Total Paid = Total Expense
+
+Total Shares Owed = Total Expense
+
+Sum of Net Balances = 0
 ```
 
-## 3. Start development server
+In the final equation, positive balances represent amounts receivable and negative balances represent amounts payable.
 
-``` bash
-npm run dev
-```
+A non-zero net balance sum can indicate a data inconsistency or a calculation/rounding problem that needs investigation.
 
-Then open the local URL shown by Vite.
+### 7. Monetary Rounding Requires Care
 
-------------------------------------------------------------------------
+Financial calculations should avoid relying on uncontrolled floating-point arithmetic for currency values.
 
-# 🧪 Development Commands
+Currency allocation and settlement calculations need explicit rounding rules so that the final participant shares reconcile with the original expense.
 
-### Run development server
+The complete financial workflow should continue to be tested as splitting methods and product features evolve.
 
-``` bash
-npm run dev
-```
+## ♿ Accessibility and Responsive Design
 
-### Run tests
+TripSplit is designed with usability across devices and interaction methods in mind.
 
-``` bash
-npm run test
-```
+Important interface considerations include:
 
-### Run lint
+- Semantic headings and clear page structure.
+- Accessible labels and descriptions.
+- Visible keyboard focus.
+- Keyboard-operable controls.
+- Appropriate modal behavior and dismissal.
+- Touch-friendly interaction targets.
+- Responsive page layouts.
+- Reduced-motion preferences where applicable.
+- Clear visual distinction between payments owed and amounts receivable.
 
-``` bash
+Accessibility should be verified as part of ongoing development rather than inferred from the use of a responsive CSS framework.
+
+## 🧪 Testing and Quality
+
+TripSplit uses Vitest and React Testing Library for automated testing.
+
+The repository includes application smoke tests that check important aspects of the home page, application branding, primary actions, and responsive rendering.
+
+The project also has a test setup configured through Vite.
+
+### Recommended Verification Commands
+
+Run the following before merging changes:
+
+```bash
 npm run lint
-```
-
-### Create production build
-
-``` bash
+npm run test
 npm run build
 ```
 
-### Preview production build
+### Important Financial Test Cases
 
-``` bash
-npm run preview
-```
+The financial domain should be tested independently of the interface, particularly for:
 
-------------------------------------------------------------------------
+- Equal expense splits.
+- Custom amount allocations.
+- Percentage splits.
+- Shares-based allocations.
+- Expenses involving only selected participants.
+- Participants who paid more or less than their fair share.
+- Multiple participants with positive and negative balances.
+- Settlement generation and balance reconciliation.
+- Currency rounding.
+- Empty trips and trips with no expenses.
+- Invalid or missing participant references.
+- Editing and deleting existing expenses.
+- Trip isolation.
+- Invalid or outdated persisted data.
 
-# 🧭 Product Philosophy
+UI tests should additionally cover the main user journeys, keyboard interactions, form validation, error states, and mobile layouts.
 
-TripSplit is intentionally designed around a few rules.
+Do not publish test counts, coverage percentages, or passing build claims unless they have been verified against the current commit.
 
-### 1. 🧮 Complexity belongs in the engine
+## ⚠️ Known Limitations
 
-Users should not have to understand the settlement algorithm.
+The current repository has a substantial client-side foundation, but several limitations remain important.
 
-### 2. ✍️ Data entry should be fast
+- **No remote backend:** The existing application does not use a remote application server or database for trip synchronization.
+- **Browser-local data:** Saved records are not automatically shared across devices or users.
+- **No implemented account system:** Authentication and user-account workflows are future capabilities.
+- **No collaborative trip synchronization:** Multiple people cannot be assumed to be editing a single synchronized trip.
+- **No integrated payment processing:** Settlement suggestions are not actual bank transfers.
+- **PWA limitations:** Installation support does not guarantee every workflow functions offline.
+- **Deployment-dependent routing:** Routes and client-side fallbacks need to be configured correctly on the hosting platform.
+- **Verification is environment-specific:** Test, lint, and build commands must be run against the current code before release.
 
-Adding an expense should feel easier than editing an Excel sheet.
+These limitations should be revised as corresponding features are implemented and verified.
 
-### 3. 👀 Results should be obvious
+## 🛣️ Roadmap
 
-The user should quickly understand:
+The roadmap describes potential extensions to the current application. Items below are future development goals, not claims of existing functionality.
 
-``` text
-Who pays?
-Who receives?
-How much?
-```
+### Core Expense Management
 
-### 4. 🔢 Money must be exact
+- [ ] Continue refining the trip creation and management journey.
+- [ ] Improve expense entry and participant selection.
+- [ ] Strengthen validation for every splitting method.
+- [ ] Improve financial edge-case handling and rounding guarantees.
+- [ ] Refine settlement explanations and payment instructions.
+- [ ] Improve accessible interaction patterns and responsive behavior.
 
-Financial calculations should not depend on approximate floating-point
-arithmetic.
+### Persistence and Reliability
 
-### 5. 🧱 Financial logic must be independent
+- [ ] Strengthen data migration and recovery mechanisms.
+- [ ] Improve error handling for malformed or outdated local data.
+- [ ] Expand regression tests around expense and settlement calculations.
+- [ ] Verify PWA caching and offline behavior.
+- [ ] Add reliable export and backup workflows.
 
-The UI should not contain duplicated accounting formulas.
+### Collaboration
 
-### 6. 🧹 No fake financial data
+- [ ] Introduce user authentication.
+- [ ] Add backend-backed persistence.
+- [ ] Support secure shared trips.
+- [ ] Add invitation and participant-access workflows.
+- [ ] Synchronize trip changes across devices.
+- [ ] Handle concurrent edits and synchronization conflicts.
 
-Balances, totals, and settlements must come from actual trip records.
+### Extended Product Capabilities
 
-### 7. 🧑‍🤝‍🧑 The product should feel like a travel companion
+- [ ] Export trip expenses and settlements as CSV or JSON.
+- [ ] Support shareable settlement summaries.
+- [ ] Explore receipt attachments.
+- [ ] Explore receipt scanning and assisted expense categorization.
+- [ ] Add configurable settlement reminders.
+- [ ] Evaluate integrations that make recording and settling expenses easier.
 
-The UI can be playful and animated without sacrificing correctness.
+The implementation order may change as the application evolves. Each new capability should preserve financial correctness, data integrity, and usability.
 
-------------------------------------------------------------------------
+## 🤝 Contributing
 
-# 💡 How TripSplit Helps
+TripSplit is under active development, and its architecture and workflows may evolve.
 
-Without TripSplit:
+Contributions that improve financial correctness, data integrity, accessibility, maintainability, or user experience are welcome.
 
-``` text
-Trip
- ↓
-Excel
- ↓
-Rows
- ↓
-Columns
- ↓
-Manual formulas
- ↓
-Manual balance checking
- ↓
-WhatsApp messages
- ↓
-"Bro how much do I owe?"
- ↓
-More calculations
-```
+### Suggested Workflow
 
-With TripSplit:
+1. Fork the repository.
+2. Create a focused feature branch.
+3. Follow the existing JavaScript and React conventions.
+4. Keep financial calculations separate from presentation logic.
+5. Add or update tests for changed behavior.
+6. Run linting, tests, and the production build.
+7. Open a pull request describing the changes and verification performed.
 
-``` text
-Trip
- ↓
-Add people
- ↓
-Record expenses
- ↓
-TripSplit calculates everything
- ↓
-Settle Up
- ↓
-"Rohan → Deba ₹X"
-```
+For financial changes, include examples covering both normal cases and important edge cases.
 
-The person maintaining the expenses no longer needs to behave like the
-group's accountant.
+Bug reports and feature requests can be submitted through [GitHub Issues](https://github.com/Krishnendu1910/TripSplit/issues).
 
-------------------------------------------------------------------------
+## 📄 License
 
-# 🌱 Designed for Further Growth
+A finalized standalone `LICENSE` file and licensing terms are not documented in this README.
 
-The current architecture intentionally keeps the core financial engine
-independent from storage and UI.
+The project owner should establish the intended license before distributing TripSplit under specific open-source terms. Until then, do not assume that the repository is available for unrestricted redistribution or commercial reuse.
 
-That makes it possible to extend TripSplit later with capabilities such
-as:
+## 👨‍💻 Author
 
--   ☁️ Cloud synchronization
--   🔐 Authentication
--   👥 Shared trips across devices
--   🔗 Invite links
--   📱 Shareable settlement summaries
--   📄 CSV/JSON export
--   🧾 Receipt attachments
--   📸 Receipt scanning
--   🤖 Intelligent expense categorization
--   🔔 Settlement reminders
+**Krishnendu Sarkar**
 
-These are extensions of the same product rather than reasons to replace
-the underlying financial model.
+- GitHub: [@Krishnendu1910](https://github.com/Krishnendu1910)
+- LinkedIn: [Krishnendu Sarkar](https://www.linkedin.com/in/krishnendu-sarkar19/)
 
-------------------------------------------------------------------------
+---
 
-# 🏁 The Core Idea
+<div align="center">
 
-TripSplit is not trying to build a prettier Excel sheet.
+### 🧳 TripSplit
 
-It is trying to transform this:
+**Record the money. TripSplit does the math.**
 
-``` text
-"Who paid what?"
-"Who was included?"
-"How much is my share?"
-"Who owes whom?"
-"How do we settle this?"
-```
+Less spreadsheet work. Clearer balances. Simpler trip settlements.
 
-into:
+[Explore TripSplit](https://github.com/Krishnendu1910/TripSplit) · [Report an Issue](https://github.com/Krishnendu1910/TripSplit/issues)
 
-``` text
-        💸 Record the expense
-                 ↓
-        🧮 TripSplit does the math
-                 ↓
-          🤝 Settle the trip
-```
-
-## **Record the money. TripSplit does the math.**
-
-------------------------------------------------------------------------
-
-## 📜 License
-
-This project is currently maintained as a personal product project.
-Licensing terms can be added when the distribution model is finalized.
+</div>
