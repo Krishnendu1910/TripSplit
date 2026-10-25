@@ -8,9 +8,7 @@
 
 A modern, responsive group-trip expense manager that helps friends track shared expenses, split costs fairly, calculate individual balances, and simplify settlements — without spreadsheets or complicated manual calculations.
 
-<p>
-  <img src="https://img.shields.io/badge/PROJECT%20STATUS-WORK%20IN%20PROGRESS-F59E0B?style=for-the-badge&labelColor=292929" alt="Project Status: Work in Progress" />
-</p>
+<img src="docs/assets/tripsplit-overview.gif" alt="TripSplit animated product overview" width="800" />
 
 <p>
   <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" />
